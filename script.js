@@ -9,6 +9,7 @@ document.getElementById('searchBtn').addEventListener('click', function() {
         headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json',
+            'Authorization': 'Basic ' + btoa('__AUTH_USERNAME__' + ':' + '__AUTH_PASSWORD__')
         },
         body: JSON.stringify({ City1: city1, City2: city2 })
     })
