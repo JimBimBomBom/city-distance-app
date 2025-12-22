@@ -4,7 +4,7 @@ document.getElementById('searchBtn').addEventListener('click', function() {
 
     console.log('Sending request to the server with:', { City1: city1, City2: city2 });
 
-    fetch('https://cds.moojtube.com:8443/distance', {
+    fetch('https://ssh.moojtube.com:8443/distance', {
         method: 'POST',
         headers: {
             'Accept': 'application/json',
