@@ -1,21 +1,480 @@
-<!DOCTYPE html>
+!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>City Distance Application</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.52.0/swagger-ui.css">
+    <title>City Distance Calculator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+
+        .input-group {
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #667eea;
+            border-top: none;
+            border-radius: 0 0 10px 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .suggestions.active {
+            display: block;
+        }
+
+        .suggestion-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background: #f8f9ff;
+        }
+
+        .suggestion-item.selected {
+            background: #e8ecff;
+        }
+
+        .city-main {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .city-details {
+            font-size: 13px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .flag {
+            font-size: 18px;
+        }
+
+        .detail-badge {
+            background: #f0f0f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+
+
+        button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-distance {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .result-text {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #667eea;
+            margin-top: 15px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .error {
+            color: #e74c3c;
+            background: #ffe8e8;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .error.show {
+            display: block;
+        }
+
+        .selected-city {
+            display: none;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #2e7d32;
+        }
+
+        .selected-city.show {
+            display: block;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <h1>City Distance Application</h1>
-        <input type="text" id="city1" placeholder="City 1", required>
-        <input type="text" id="city2" placeholder="City 2", required>
-        <button id="searchBtn">Search</button>
-        <p id="result"></p>
+        <h1>🌍 City Distance Calculator</h1>
+        
+        <div class="input-group">
+            <label for="city1">First City</label>
+            <input type="text" id="city1" placeholder="Start typing city name..." autocomplete="off">
+            <div class="suggestions" id="suggestions1"></div>
+            <div class="selected-city" id="selected1"></div>
+        </div>
+
+        <div class="input-group">
+            <label for="city2">Second City</label>
+            <input type="text" id="city2" placeholder="Start typing city name..." autocomplete="off">
+            <div class="suggestions" id="suggestions2"></div>
+            <div class="selected-city" id="selected2"></div>
+        </div>
+
+        <button id="searchBtn">Calculate Distance</button>
+
+        <div class="loading" id="loading">Calculating distance...</div>
+        <div class="error" id="error"></div>
+        
+        <div class="result" id="result">
+            <div class="result-distance" id="distance"></div>
+            <div class="result-text" id="resultText"></div>
+        </div>
     </div>
 
-    <script src="script.js"></script>
+    <script>
+        // Configuration
+        const API_BASE = 'https://cds.moojtube.com:8443';
+        const AUTH = btoa('__AUTH_USERNAME__:__AUTH_PASSWORD__');
+
+        // State management
+        let selectedCities = {
+            city1: null,
+            city2: null
+        };
+
+        let debounceTimer = null;
+        let currentFocus = -1;
+
+        // Autocomplete functionality
+        function setupAutocomplete(inputId, suggestionsId, selectedId, cityKey) {
+            const input = document.getElementById(inputId);
+            const suggestionsDiv = document.getElementById(suggestionsId);
+            const selectedDiv = document.getElementById(selectedId);
+
+            input.addEventListener('input', function() {
+                const query = this.value.trim();
+                
+                // Clear selection when user types
+                selectedCities[cityKey] = null;
+                selectedDiv.classList.remove('show');
+                
+                if (query.length < 2) {
+                    suggestionsDiv.classList.remove('active');
+                    return;
+                }
+
+                // Debounce API calls
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    fetchSuggestions(query, suggestionsDiv, input, selectedDiv, cityKey);
+                }, 300);
+            });
+
+            // Handle keyboard navigation
+            input.addEventListener('keydown', function(e) {
+                const items = suggestionsDiv.querySelectorAll('.suggestion-item');
+                
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    currentFocus++;
+                    if (currentFocus >= items.length) currentFocus = 0;
+                    setActive(items);
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    currentFocus--;
+                    if (currentFocus < 0) currentFocus = items.length - 1;
+                    setActive(items);
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    if (currentFocus > -1 && items[currentFocus]) {
+                        items[currentFocus].click();
+                    }
+                }
+            });
+
+            function setActive(items) {
+                items.forEach((item, index) => {
+                    item.classList.toggle('selected', index === currentFocus);
+                });
+            }
+
+            // Close suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!input.contains(e.target) && !suggestionsDiv.contains(e.target)) {
+                    suggestionsDiv.classList.remove('active');
+                    currentFocus = -1;
+                }
+            });
+        }
+
+        async function fetchSuggestions(query, suggestionsDiv, input, selectedDiv, cityKey) {
+            try {
+                const response = await fetch(`${API_BASE}/suggestions?q=${encodeURIComponent(query)}`);
+
+                if (!response.ok) throw new Error('Failed to fetch suggestions');
+
+                const data = await response.json();
+                // Handle the API response structure: { data: [...], message: "..." }
+                const suggestions = data.data || data;
+                displaySuggestions(suggestions, suggestionsDiv, input, selectedDiv, cityKey);
+            } catch (error) {
+                console.error('Error fetching suggestions:', error);
+                suggestionsDiv.classList.remove('active');
+            }
+        }
+
+        function displaySuggestions(suggestions, suggestionsDiv, input, selectedDiv, cityKey) {
+            suggestionsDiv.innerHTML = '';
+            currentFocus = -1;
+
+            if (!suggestions || suggestions.length === 0) {
+                suggestionsDiv.classList.remove('active');
+                return;
+            }
+
+            suggestions.forEach(city => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item';
+                
+                const details = [];
+                if (city.country) details.push(`<span class="detail-badge">${city.country}</span>`);
+                if (city.adminRegion) details.push(`<span class="detail-badge">${city.adminRegion}</span>`);
+                if (city.population) details.push(`<span class="detail-badge">${formatPopulation(city.population)}</span>`);
+                
+                item.innerHTML = `
+                    <div class="city-main">
+                        ${city.flag ? `<span class="flag">${city.flag}</span> ` : ''}
+                        ${city.name}
+                    </div>
+                    ${details.length > 0 ? `<div class="city-details">${details.join('')}</div>` : ''}
+                `;
+
+                item.addEventListener('click', () => {
+                    selectCity(city, input, suggestionsDiv, selectedDiv, cityKey);
+                });
+
+                suggestionsDiv.appendChild(item);
+            });
+
+            suggestionsDiv.classList.add('active');
+        }
+
+        function selectCity(city, input, suggestionsDiv, selectedDiv, cityKey) {
+            selectedCities[cityKey] = city;
+            input.value = city.name;
+            suggestionsDiv.classList.remove('active');
+            
+            selectedDiv.innerHTML = `
+                ✓ Selected: ${city.flag || ''} ${city.name}
+                ${city.country ? `, ${city.country}` : ''}
+                ${city.adminRegion ? ` (${city.adminRegion})` : ''}
+            `;
+            selectedDiv.classList.add('show');
+        }
+
+        function formatPopulation(pop) {
+            if (pop >= 1000000) return `${(pop / 1000000).toFixed(1)}M`;
+            if (pop >= 1000) return `${(pop / 1000).toFixed(0)}K`;
+            return pop.toString();
+        }
+
+        // Calculate distance
+        document.getElementById('searchBtn').addEventListener('click', async function() {
+            const city1 = selectedCities.city1;
+            const city2 = selectedCities.city2;
+            
+            const errorDiv = document.getElementById('error');
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+            
+            // Hide previous results
+            errorDiv.classList.remove('show');
+            resultDiv.classList.remove('show');
+            
+            // Validation
+            if (!city1 || !city2) {
+                errorDiv.textContent = 'Please select both cities from the suggestions';
+                errorDiv.classList.add('show');
+                return;
+            }
+
+            loadingDiv.classList.add('show');
+            this.disabled = true;
+
+            try {
+                const response = await fetch(`${API_BASE}/distance`, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        City1: city1.id,
+                        City2: city2.id 
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || 'Failed to calculate distance');
+                }
+
+                const data = await response.json();
+                // Handle both possible response formats
+                const distance = data.distanceKm || data.data || data;
+                
+                document.getElementById('distance').textContent = `${distance.toFixed(2)} km`;
+                document.getElementById('resultText').textContent = 
+                    `Between ${city1.name}, ${city1.country || ''} and ${city2.name}, ${city2.country || ''}`;
+                resultDiv.classList.add('show');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                errorDiv.textContent = error.message || 'An error occurred. Please try again later.';
+                errorDiv.classList.add('show');
+            } finally {
+                loadingDiv.classList.remove('show');
+                this.disabled = false;
+            }
+        });
+
+        // Initialize autocomplete for both inputs
+        setupAutocomplete('city1', 'suggestions1', 'selected1', 'city1');
+        setupAutocomplete('city2', 'suggestions2', 'selected2', 'city2');
+    </script>
 </body>
 </html>
