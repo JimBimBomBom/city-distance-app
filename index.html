@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>City Distance Calculator</title>
+    <title>City Distance Application</title>
     <style>
         * {
             margin: 0;
@@ -37,7 +37,7 @@
             font-size: 28px;
         }
 
-        .input-group {
+        .input-wrapper {
             position: relative;
             margin-bottom: 25px;
         }
@@ -96,12 +96,9 @@
             border-bottom: none;
         }
 
-        .suggestion-item:hover {
-            background: #f8f9ff;
-        }
-
+        .suggestion-item:hover,
         .suggestion-item.selected {
-            background: #e8ecff;
+            background: #f8f9ff;
         }
 
         .city-main {
@@ -130,7 +127,19 @@
             font-size: 12px;
         }
 
+        .selected-city {
+            display: none;
+            margin-top: 8px;
+            padding: 8px 12px;
+            background: #e8f5e9;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #2e7d32;
+        }
 
+        .selected-city.show {
+            display: block;
+        }
 
         button {
             width: 100%;
@@ -143,6 +152,7 @@
             font-weight: 600;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
+            margin-top: 10px;
         }
 
         button:hover {
@@ -160,16 +170,18 @@
             transform: none;
         }
 
-        .result {
+        #result {
             margin-top: 30px;
             padding: 20px;
             background: #f8f9ff;
             border-radius: 10px;
             text-align: center;
             display: none;
+            font-size: 18px;
+            color: #333;
         }
 
-        .result.show {
+        #result.show {
             display: block;
             animation: slideIn 0.3s ease-out;
         }
@@ -185,29 +197,6 @@
             }
         }
 
-        .result-distance {
-            font-size: 32px;
-            font-weight: 700;
-            color: #667eea;
-            margin-bottom: 8px;
-        }
-
-        .result-text {
-            color: #666;
-            font-size: 14px;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            color: #667eea;
-            margin-top: 15px;
-        }
-
-        .loading.show {
-            display: block;
-        }
-
         .error {
             color: #e74c3c;
             background: #ffe8e8;
@@ -221,33 +210,30 @@
             display: block;
         }
 
-        .selected-city {
+        .loading {
             display: none;
-            margin-top: 8px;
-            padding: 8px 12px;
-            background: #e8f5e9;
-            border-radius: 6px;
-            font-size: 13px;
-            color: #2e7d32;
+            text-align: center;
+            color: #667eea;
+            margin-top: 15px;
         }
 
-        .selected-city.show {
+        .loading.show {
             display: block;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🌍 City Distance Calculator</h1>
+        <h1>🌍 City Distance Application</h1>
         
-        <div class="input-group">
+        <div class="input-wrapper">
             <label for="city1">First City</label>
             <input type="text" id="city1" placeholder="Start typing city name..." autocomplete="off">
             <div class="suggestions" id="suggestions1"></div>
             <div class="selected-city" id="selected1"></div>
         </div>
 
-        <div class="input-group">
+        <div class="input-wrapper">
             <label for="city2">Second City</label>
             <input type="text" id="city2" placeholder="Start typing city name..." autocomplete="off">
             <div class="suggestions" id="suggestions2"></div>
@@ -258,19 +244,33 @@
 
         <div class="loading" id="loading">Calculating distance...</div>
         <div class="error" id="error"></div>
-        
-        <div class="result" id="result">
-            <div class="result-distance" id="distance"></div>
-            <div class="result-text" id="resultText"></div>
-        </div>
+        <p id="result"></p>
     </div>
 
-    <script>
-        // Configuration
-        const API_BASE = 'https://cds2.moojtube.com:8443';
-        const AUTH = btoa('__AUTH_USERNAME__:__AUTH_PASSWORD__');
+    <script type="module">
+        // ============================================================================
+        // CONFIGURATION - UPDATE THESE VALUES
+        // ============================================================================
+        const API_BASE = 'https://cds.moojtube.com:8443';
+        const AUTH_USERNAME = '__AUTH_USERNAME__';
+        const AUTH_PASSWORD = '__AUTH_PASSWORD__';
 
-        // State management
+        import CDSClient from 'https://cdn.jsdelivr.net/npm/@your-org/cds-client@1.0.0/+esm';
+        
+        // ============================================================================
+        // INITIALIZE CDS CLIENT
+        // ============================================================================
+        const client = new CDSClient({
+            baseURL: API_BASE,
+            username: AUTH_USERNAME,
+            password: AUTH_PASSWORD,
+            timeout: 30000,
+            retries: 3
+        });
+
+        // ============================================================================
+        // STATE MANAGEMENT
+        // ============================================================================
         let selectedCities = {
             city1: null,
             city2: null
@@ -279,7 +279,9 @@
         let debounceTimer = null;
         let currentFocus = -1;
 
-        // Autocomplete functionality
+        // ============================================================================
+        // AUTOCOMPLETE FUNCTIONALITY
+        // ============================================================================
         function setupAutocomplete(inputId, suggestionsId, selectedId, cityKey) {
             const input = document.getElementById(inputId);
             const suggestionsDiv = document.getElementById(suggestionsId);
@@ -288,7 +290,6 @@
             input.addEventListener('input', function() {
                 const query = this.value.trim();
                 
-                // Clear selection when user types
                 selectedCities[cityKey] = null;
                 selectedDiv.classList.remove('show');
                 
@@ -297,14 +298,12 @@
                     return;
                 }
 
-                // Debounce API calls
                 clearTimeout(debounceTimer);
                 debounceTimer = setTimeout(() => {
                     fetchSuggestions(query, suggestionsDiv, input, selectedDiv, cityKey);
                 }, 300);
             });
 
-            // Handle keyboard navigation
             input.addEventListener('keydown', function(e) {
                 const items = suggestionsDiv.querySelectorAll('.suggestion-item');
                 
@@ -332,7 +331,6 @@
                 });
             }
 
-            // Close suggestions when clicking outside
             document.addEventListener('click', function(e) {
                 if (!input.contains(e.target) && !suggestionsDiv.contains(e.target)) {
                     suggestionsDiv.classList.remove('active');
@@ -343,17 +341,12 @@
 
         async function fetchSuggestions(query, suggestionsDiv, input, selectedDiv, cityKey) {
             try {
-                const response = await fetch(`${API_BASE}/suggestions?q=${encodeURIComponent(query)}`);
-
-                if (!response.ok) throw new Error('Failed to fetch suggestions');
-
-                const data = await response.json();
-                // Handle the API response structure: { data: [...], message: "..." }
-                const suggestions = data.data || data;
+                const suggestions = await client.getSuggestions(query);
                 displaySuggestions(suggestions, suggestionsDiv, input, selectedDiv, cityKey);
             } catch (error) {
                 console.error('Error fetching suggestions:', error);
                 suggestionsDiv.classList.remove('active');
+                showError(error.message || 'Failed to fetch city suggestions');
             }
         }
 
@@ -412,7 +405,19 @@
             return pop.toString();
         }
 
-        // Calculate distance
+        function showError(message) {
+            const errorDiv = document.getElementById('error');
+            errorDiv.textContent = message;
+            errorDiv.classList.add('show');
+            
+            setTimeout(() => {
+                errorDiv.classList.remove('show');
+            }, 5000);
+        }
+
+        // ============================================================================
+        // CALCULATE DISTANCE
+        // ============================================================================
         document.getElementById('searchBtn').addEventListener('click', async function() {
             const city1 = selectedCities.city1;
             const city2 = selectedCities.city2;
@@ -421,11 +426,9 @@
             const resultDiv = document.getElementById('result');
             const loadingDiv = document.getElementById('loading');
             
-            // Hide previous results
             errorDiv.classList.remove('show');
             resultDiv.classList.remove('show');
             
-            // Validation
             if (!city1 || !city2) {
                 errorDiv.textContent = 'Please select both cities from the suggestions';
                 errorDiv.classList.add('show');
@@ -436,30 +439,9 @@
             this.disabled = true;
 
             try {
-                const response = await fetch(`${API_BASE}/distance`, {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        City1Id: city1.id,
-                        City2Id: city2.id 
-                    })
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.error || 'Failed to calculate distance');
-                }
-
-                const data = await response.json();
-                // Handle both possible response formats
-                const distance = data.distanceKm || data.data || data;
+                const distance = await client.calculateDistance(city1.id, city2.id);
                 
-                document.getElementById('distance').textContent = `${distance.toFixed(2)} km`;
-                document.getElementById('resultText').textContent = 
-                    `Between ${city1.name}, ${city1.country || ''} and ${city2.name}, ${city2.country || ''}`;
+                resultDiv.textContent = `Distance between '${city1.name}' (${city1.country || 'Unknown'}) and '${city2.name}' (${city2.country || 'Unknown'}) is: ${distance.toFixed(2)} km`;
                 resultDiv.classList.add('show');
                 
             } catch (error) {
@@ -472,7 +454,9 @@
             }
         });
 
-        // Initialize autocomplete for both inputs
+        // ============================================================================
+        // INITIALIZE
+        // ============================================================================
         setupAutocomplete('city1', 'suggestions1', 'selected1', 'city1');
         setupAutocomplete('city2', 'suggestions2', 'selected2', 'city2');
     </script>
