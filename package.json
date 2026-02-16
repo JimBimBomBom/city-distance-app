@@ -1,5 +1,5 @@
 {
-  "name": "@your-org/cds-client",
+  "name": "@xfilipnamefilip/cds-client",
   "version": "1.0.0",
   "description": "Official client library for City Distance Service API",
   "main": "dist/index.js",
