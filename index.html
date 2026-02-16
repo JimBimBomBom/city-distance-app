@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -191,6 +192,7 @@
                 opacity: 0;
                 transform: translateY(10px);
             }
+
             to {
                 opacity: 1;
                 transform: translateY(0);
@@ -222,10 +224,11 @@
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h1>🌍 City Distance Application</h1>
-        
+
         <div class="input-wrapper">
             <label for="city1">First City</label>
             <input type="text" id="city1" placeholder="Start typing city name..." autocomplete="off">
@@ -254,22 +257,19 @@
         const API_BASE = 'https://cds.moojtube.com:8443';
         const AUTH_USERNAME = '__AUTH_USERNAME__';
         const AUTH_PASSWORD = '__AUTH_PASSWORD__';
+        const AUTH_HEADER = 'Basic ' + btoa(AUTH_USERNAME + ':' + AUTH_PASSWORD);
 
-        // import CDSClient from 'https://cdn.jsdelivr.net/npm/@xfilipnamefilip/cds-client@1.0.0/+esm';
-        // import CDSClient from 'https://cdn.skypack.dev/@xfilipnamefilip/cds-client@1.0.0';
-
-        import CDSClient from 'https://unpkg.com/@xfilipnamefilip/cds-client@1.0.0/dist/index.mjs';
-        
+        // import CDSClient from 'https://unpkg.com/@xfilipnamefilip/cds-client@1.0.0/dist/index.mjs';
         // ============================================================================
         // INITIALIZE CDS CLIENT
         // ============================================================================
-        const client = new CDSClient({
-            baseURL: API_BASE,
-            username: AUTH_USERNAME,
-            password: AUTH_PASSWORD,
-            timeout: 30000,
-            retries: 3
-        });
+        // const client = new CDSClient({
+        //     baseURL: API_BASE,
+        //     username: AUTH_USERNAME,
+        //     password: AUTH_PASSWORD,
+        //     timeout: 30000,
+        //     retries: 3
+        // });
 
         // ============================================================================
         // STATE MANAGEMENT
@@ -285,17 +285,41 @@
         // ============================================================================
         // AUTOCOMPLETE FUNCTIONALITY
         // ============================================================================
+        async function getSuggestions(query) {
+            const res = await fetch(`${API_BASE}/suggestions?q=${encodeURIComponent(query)}`, {
+                headers: { 'Authorization': AUTH_HEADER, 'Accept': 'application/json' }
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            return data.data || data;
+        }
+
+        async function calculateDistance(city1Id, city2Id) {
+            const res = await fetch(`${API_BASE}/distance`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': AUTH_HEADER,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ City1: city1Id, City2: city2Id })
+            });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            return data.distanceKm || data.data || data;
+        }
+
         function setupAutocomplete(inputId, suggestionsId, selectedId, cityKey) {
             const input = document.getElementById(inputId);
             const suggestionsDiv = document.getElementById(suggestionsId);
             const selectedDiv = document.getElementById(selectedId);
 
-            input.addEventListener('input', function() {
+            input.addEventListener('input', function () {
                 const query = this.value.trim();
-                
+
                 selectedCities[cityKey] = null;
                 selectedDiv.classList.remove('show');
-                
+
                 if (query.length < 2) {
                     suggestionsDiv.classList.remove('active');
                     return;
@@ -307,9 +331,9 @@
                 }, 300);
             });
 
-            input.addEventListener('keydown', function(e) {
+            input.addEventListener('keydown', function (e) {
                 const items = suggestionsDiv.querySelectorAll('.suggestion-item');
-                
+
                 if (e.key === 'ArrowDown') {
                     e.preventDefault();
                     currentFocus++;
@@ -334,7 +358,7 @@
                 });
             }
 
-            document.addEventListener('click', function(e) {
+            document.addEventListener('click', function (e) {
                 if (!input.contains(e.target) && !suggestionsDiv.contains(e.target)) {
                     suggestionsDiv.classList.remove('active');
                     currentFocus = -1;
@@ -365,12 +389,12 @@
             suggestions.forEach(city => {
                 const item = document.createElement('div');
                 item.className = 'suggestion-item';
-                
+
                 const details = [];
                 if (city.country) details.push(`<span class="detail-badge">${city.country}</span>`);
                 if (city.adminRegion) details.push(`<span class="detail-badge">${city.adminRegion}</span>`);
                 if (city.population) details.push(`<span class="detail-badge">${formatPopulation(city.population)}</span>`);
-                
+
                 item.innerHTML = `
                     <div class="city-main">
                         ${city.flag ? `<span class="flag">${city.flag}</span> ` : ''}
@@ -393,7 +417,7 @@
             selectedCities[cityKey] = city;
             input.value = city.name;
             suggestionsDiv.classList.remove('active');
-            
+
             selectedDiv.innerHTML = `
                 ✓ Selected: ${city.flag || ''} ${city.name}
                 ${city.country ? `, ${city.country}` : ''}
@@ -412,7 +436,7 @@
             const errorDiv = document.getElementById('error');
             errorDiv.textContent = message;
             errorDiv.classList.add('show');
-            
+
             setTimeout(() => {
                 errorDiv.classList.remove('show');
             }, 5000);
@@ -421,17 +445,17 @@
         // ============================================================================
         // CALCULATE DISTANCE
         // ============================================================================
-        document.getElementById('searchBtn').addEventListener('click', async function() {
+        document.getElementById('searchBtn').addEventListener('click', async function () {
             const city1 = selectedCities.city1;
             const city2 = selectedCities.city2;
-            
+
             const errorDiv = document.getElementById('error');
             const resultDiv = document.getElementById('result');
             const loadingDiv = document.getElementById('loading');
-            
+
             errorDiv.classList.remove('show');
             resultDiv.classList.remove('show');
-            
+
             if (!city1 || !city2) {
                 errorDiv.textContent = 'Please select both cities from the suggestions';
                 errorDiv.classList.add('show');
@@ -443,10 +467,10 @@
 
             try {
                 const distance = await client.calculateDistance(city1.id, city2.id);
-                
+
                 resultDiv.textContent = `Distance between '${city1.name}' (${city1.country || 'Unknown'}) and '${city2.name}' (${city2.country || 'Unknown'}) is: ${distance.toFixed(2)} km`;
                 resultDiv.classList.add('show');
-                
+
             } catch (error) {
                 console.error('Error:', error);
                 errorDiv.textContent = error.message || 'An error occurred. Please try again later.';
@@ -464,4 +488,5 @@
         setupAutocomplete('city2', 'suggestions2', 'selected2', 'city2');
     </script>
 </body>
+
 </html>
