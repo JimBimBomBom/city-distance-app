@@ -29,11 +29,3 @@ jobs:
       with:
         github_token: ${{ secrets.TOKEN }}  # GitHub token is automatically available
         publish_dir: ./  # Adjust to your build output directory
-        
-    # - name: Invalidate GitHub Pages cache
-    #   uses: actions/cache@v3
-    #   with:
-    #     path: ./public  # Adjust this path to your actual build output
-    #     key: ${{ runner.os }}-site-cache
-    #     restore-keys: |
-    #       ${{ runner.os }}-site-cache
