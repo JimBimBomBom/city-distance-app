@@ -35,7 +35,7 @@ services:
     networks:
       - cds-network
     volumes:
-      - ./data/mysql:/var/lib/mysql
+      # - ./data/mysql:/var/lib/mysql
       - type: bind
         source: ./mysql-custom.cnf
         target: /etc/mysql/conf.d/custom.cnf
