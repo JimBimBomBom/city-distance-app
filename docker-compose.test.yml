@@ -62,8 +62,8 @@ services:
       - "9200:9200"
     networks:
       - cds-network
-    volumes:
-      - ./data/elasticsearch:/usr/share/elasticsearch/data
+    # volumes:
+    #   - ./data/elasticsearch:/usr/share/elasticsearch/data
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 10s
