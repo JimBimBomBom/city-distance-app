@@ -9,6 +9,7 @@ services:
         required: true
     volumes:
       - ./tests/fixtures:/app/fixtures:ro
+      - ./Resources:/app/Resources:ro
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health_check"]
       interval: 5s
@@ -24,20 +25,27 @@ services:
         condition: service_healthy
 
   db:
-    image: mysql:8.0
+    image: mysql:latest
     container_name: cds_mysql_db
     env_file:
       - path: "DefaultDatabaseEnv.env"
         required: true
     environment:
-      - MYSQL_ROOT_PASSWORD=password123
-      # - MYSQL_DATABASE=cds_db
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD:-changeme}
     networks:
       - cds-network
     volumes:
-      - ./MySQLInit.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./data/mysql:/var/lib/mysql
+      - type: bind
+        source: ./mysql-custom.cnf
+        target: /etc/mysql/conf.d/custom.cnf
+        read_only: true
+    command: >
+      mysqld 
+      --require_secure_transport=OFF
+      --caching_sha2_password_auto_generate_rsa_keys=OFF
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=${MYSQL_ROOT_PASSWORD:-changeme}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -62,6 +70,8 @@ services:
       - "9200:9200"
     networks:
       - cds-network
+    volumes:
+      - ./data/elasticsearch:/usr/share/elasticsearch/data
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 10s

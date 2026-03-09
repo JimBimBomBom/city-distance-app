@@ -1,0 +1,40 @@
+{"index":{"_index":"cities","_id":"1"}}
+{"name":"New York","countryCode":"US","country":"United States","adminRegion":"New York","population":8405837,"flag":"US","suggest":[{"input":"New York","weight":100},{"input":"NYC","weight":50},{"input":"New York City","weight":80}],"location":{"lat":40.7128,"lon":-74.006}}
+{"index":{"_index":"cities","_id":"2"}}
+{"name":"London","countryCode":"GB","country":"United Kingdom","adminRegion":"England","population":8982000,"flag":"GB","suggest":[{"input":"London","weight":100},{"input":"Greater London","weight":80}],"location":{"lat":51.5074,"lon":-0.1278}}
+{"index":{"_index":"cities","_id":"3"}}
+{"name":"Tokyo","countryCode":"JP","country":"Japan","adminRegion":"Tokyo","population":13960000,"flag":"JP","suggest":[{"input":"Tokyo","weight":100},{"input":"Tokyo Metropolis","weight":80}],"location":{"lat":35.6762,"lon":139.6503}}
+{"index":{"_index":"cities","_id":"4"}}
+{"name":"Paris","countryCode":"FR","country":"France","adminRegion":"Île-de-France","population":2161000,"flag":"FR","suggest":[{"input":"Paris","weight":100},{"input":"City of Light","weight":30}],"location":{"lat":48.8566,"lon":2.3522}}
+{"index":{"_index":"cities","_id":"5"}}
+{"name":"Berlin","countryCode":"DE","country":"Germany","adminRegion":"Berlin","population":3645000,"flag":"DE","suggest":[{"input":"Berlin","weight":100}],"location":{"lat":52.52,"lon":13.405}}
+{"index":{"_index":"cities","_id":"6"}}
+{"name":"Sydney","countryCode":"AU","country":"Australia","adminRegion":"New South Wales","population":5312000,"flag":"AU","suggest":[{"input":"Sydney","weight":100}],"location":{"lat":-33.8688,"lon":151.2093}}
+{"index":{"_index":"cities","_id":"7"}}
+{"name":"Toronto","countryCode":"CA","country":"Canada","adminRegion":"Ontario","population":2930000,"flag":"CA","suggest":[{"input":"Toronto","weight":100},{"input":"TO","weight":50},{"input":"The 6ix","weight":40}],"location":{"lat":43.6532,"lon":-79.3832}}
+{"index":{"_index":"cities","_id":"8"}}
+{"name":"Singapore","countryCode":"SG","country":"Singapore","adminRegion":"Singapore","population":5686000,"flag":"SG","suggest":[{"input":"Singapore","weight":100},{"input":"SG","weight":50}],"location":{"lat":1.3521,"lon":103.8198}}
+{"index":{"_index":"cities","_id":"9"}}
+{"name":"Dubai","countryCode":"AE","country":"United Arab Emirates","adminRegion":"Dubai","population":3331000,"flag":"AE","suggest":[{"input":"Dubai","weight":100},{"input":"DXB","weight":50}],"location":{"lat":25.2048,"lon":55.2708}}
+{"index":{"_index":"cities","_id":"10"}}
+{"name":"Los Angeles","countryCode":"US","country":"United States","adminRegion":"California","population":3980400,"flag":"US","suggest":[{"input":"Los Angeles","weight":100},{"input":"LA","weight":80},{"input":"L.A.","weight":80}],"location":{"lat":34.0522,"lon":-118.2437}}
+{"index":{"_index":"cities","_id":"11"}}
+{"name":"Chicago","countryCode":"US","country":"United States","adminRegion":"Illinois","population":2716000,"flag":"US","suggest":[{"input":"Chicago","weight":100},{"input":"Chi-town","weight":40},{"input":"Windy City","weight":30}],"location":{"lat":41.8781,"lon":-87.6298}}
+{"index":{"_index":"cities","_id":"12"}}
+{"name":"Madrid","countryCode":"ES","country":"Spain","adminRegion":"Community of Madrid","population":3223000,"flag":"ES","suggest":[{"input":"Madrid","weight":100}],"location":{"lat":40.4168,"lon":-3.7038}}
+{"index":{"_index":"cities","_id":"13"}}
+{"name":"Rome","countryCode":"IT","country":"Italy","adminRegion":"Lazio","population":2873000,"flag":"IT","suggest":[{"input":"Rome","weight":100},{"input":"Roma","weight":90}],"location":{"lat":41.9028,"lon":12.4964}}
+{"index":{"_index":"cities","_id":"14"}}
+{"name":"Moscow","countryCode":"RU","country":"Russia","adminRegion":"Moscow","population":11920000,"flag":"RU","suggest":[{"input":"Moscow","weight":100},{"input":"Moskva","weight":80}],"location":{"lat":55.7558,"lon":37.6173}}
+{"index":{"_index":"cities","_id":"15"}}
+{"name":"Mumbai","countryCode":"IN","country":"India","adminRegion":"Maharashtra","population":20411000,"flag":"IN","suggest":[{"input":"Mumbai","weight":100},{"input":"Bombay","weight":70}],"location":{"lat":19.076,"lon":72.8777}}
+{"index":{"_index":"cities","_id":"16"}}
+{"name":"Shanghai","countryCode":"CN","country":"China","adminRegion":"Shanghai","population":26320000,"flag":"CN","suggest":[{"input":"Shanghai","weight":100}],"location":{"lat":31.2304,"lon":121.4737}}
+{"index":{"_index":"cities","_id":"17"}}
+{"name":"São Paulo","countryCode":"BR","country":"Brazil","adminRegion":"São Paulo","population":12330000,"flag":"BR","suggest":[{"input":"São Paulo","weight":100},{"input":"Sao Paulo","weight":90}],"location":{"lat":-23.5505,"lon":-46.6333}}
+{"index":{"_index":"cities","_id":"18"}}
+{"name":"Mexico City","countryCode":"MX","country":"Mexico","adminRegion":"Mexico City","population":9200000,"flag":"MX","suggest":[{"input":"Mexico City","weight":100},{"input":"CDMX","weight":80},{"input":"Ciudad de México","weight":80}],"location":{"lat":19.4326,"lon":-99.1332}}
+{"index":{"_index":"cities","_id":"19"}}
+{"name":"Cairo","countryCode":"EG","country":"Egypt","adminRegion":"Cairo Governorate","population":9840000,"flag":"EG","suggest":[{"input":"Cairo","weight":100},{"input":"Al-Qahira","weight":70}],"location":{"lat":30.0444,"lon":31.2357}}
+{"index":{"_index":"cities","_id":"20"}}
+{"name":"Munich","countryCode":"DE","country":"Germany","adminRegion":"Bavaria","population":1472000,"flag":"DE","suggest":[{"input":"Munich","weight":100},{"input":"München","weight":90}],"location":{"lat":48.1351,"lon":11.582}}

@@ -32,10 +32,8 @@ export default defineConfig({
   
   /* Shared settings for all the projects below */
   use: {
-    /* Base URL for the website (local file server) */
-    baseURL: process.env.CI 
-      ? 'file:///' + process.cwd().replace(/\\/g, '/') + '/website/index.html'
-      : 'http://localhost:3000',
+    /* Base URL for the website */
+    baseURL: 'http://localhost:3000',
     
     /* Collect trace when retrying the failed test */
     trace: 'on-first-retry',
@@ -55,8 +53,8 @@ export default defineConfig({
   ],
 
   /* Run local dev server before starting the tests */
-  webServer: process.env.CI ? undefined : {
-    command: 'npx serve website -p 3000',
+  webServer: {
+    command: 'npx serve website -p 3000 --single',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,

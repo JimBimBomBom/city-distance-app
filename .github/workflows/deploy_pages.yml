@@ -110,24 +110,88 @@ jobs:
           exit 1
         fi
         
-        # Wait for backend
-        echo "⏳ Waiting for CDS Backend to be ready..."
-        attempt=0
-        while [ $attempt -lt $max_attempts ]; do
-          if curl -s http://localhost:8080/health_check > /dev/null 2>&1; then
-            echo "✅ Backend is ready!"
-            break
-          fi
-          attempt=$((attempt + 1))
-          echo "Attempt $attempt/$max_attempts - Backend not ready yet..."
-          sleep 2
-        done
+         # Wait for backend
+         echo "⏳ Waiting for CDS Backend to be ready..."
+         attempt=0
+         while [ $attempt -lt $max_attempts ]; do
+           if curl -s http://localhost:8080/health_check > /dev/null 2>&1; then
+             echo "✅ Backend is ready!"
+             break
+           fi
+           attempt=$((attempt + 1))
+           echo "Attempt $attempt/$max_attempts - Backend not ready yet..."
+           
+           # Show debug info every 20 attempts
+           if [ $((attempt % 20)) -eq 0 ]; then
+             echo ""
+             echo "🔍 DEBUG INFO (attempt $attempt):"
+             echo "📋 Connection String:"
+             grep "DATABASE_CONNECTION_STRING" DefaultAppEnv.env || echo "Not found"
+             echo ""
+             echo "📋 Backend logs (last 20 lines):"
+             docker compose -f docker-compose.test.yml logs cds-backend --tail=20 2>/dev/null || true
+             echo ""
+           fi
+           
+           sleep 2
+         done
         
-        if [ $attempt -eq $max_attempts ]; then
-          echo "❌ Backend failed to start"
-          docker compose -f docker-compose.test.yml logs cds-backend
-          exit 1
-        fi
+          if [ $attempt -eq $max_attempts ]; then
+            echo "❌ Backend failed to start"
+            echo ""
+            echo "🔍 DEBUGGING INFORMATION:"
+            echo "========================"
+            echo ""
+            echo "📋 Database Connection String from DefaultAppEnv.env:"
+            grep "DATABASE_CONNECTION_STRING" DefaultAppEnv.env || echo "Not found in DefaultAppEnv.env"
+            echo ""
+            echo "📋 All Environment Variables passed to backend:"
+            cat DefaultAppEnv.env
+            echo ""
+            echo "📋 MySQL Container Environment:"
+            docker compose -f docker-compose.test.yml exec db env | grep -i mysql || true
+            echo ""
+            echo "📋 Backend Container Logs:"
+            docker compose -f docker-compose.test.yml logs cds-backend --tail=100
+            echo ""
+            echo "📋 MySQL Container Logs:"
+            docker compose -f docker-compose.test.yml logs db --tail=50
+            echo ""
+            echo "📋 Testing MySQL connection from backend container:"
+            docker compose -f docker-compose.test.yml exec cds-backend sh -c "nc -zv db 3306" 2>&1 || echo "Cannot connect to MySQL port"
+            echo ""
+            exit 1
+          fi
+         
+         # Load test data into Elasticsearch for fast searching
+         echo "📊 Loading test data into Elasticsearch..."
+         curl -X POST "http://localhost:9200/_bulk" \
+           -H "Content-Type: application/x-ndjson" \
+           --data-binary @tests/fixtures/es_cities_bulk.json \
+           2>/dev/null || echo "⚠️  Could not load ES data (backend may handle this)"
+         
+         # Start web server for Playwright tests
+         echo "🌐 Starting web server..."
+         npx serve website -p 3000 &
+         
+         # Wait for web server to be ready
+         echo "⏳ Waiting for web server..."
+         attempt=0
+         max_ws_attempts=30
+         while [ $attempt -lt $max_ws_attempts ]; do
+           if curl -s http://localhost:3000 > /dev/null 2>&1; then
+             echo "✅ Web server is ready!"
+             break
+           fi
+           attempt=$((attempt + 1))
+           echo "Attempt $attempt/$max_ws_attempts - Web server not ready yet..."
+           sleep 1
+         done
+         
+         if [ $attempt -eq $max_ws_attempts ]; then
+           echo "❌ Web server failed to start"
+           exit 1
+         fi
 
     # Install Playwright with Node.js
     - name: Install Playwright Browsers
