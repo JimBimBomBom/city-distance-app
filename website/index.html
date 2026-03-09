@@ -198,50 +198,19 @@
 </div>
 
 <script type="module">
+// Import CDS client utilities from npm package via CDN
+import { FlagUtils, FormatUtils } from 'https://unpkg.com/@xfilipnamefilip/cds-client@latest/dist/index.mjs';
+
 const API_BASE      = 'https://cds2.moojtube.com:8443';
 const AUTH_USERNAME = '__AUTH_USERNAME__';
 const AUTH_PASSWORD = '__AUTH_PASSWORD__';
 const AUTH_HEADER   = 'Basic ' + btoa(AUTH_USERNAME + ':' + AUTH_PASSWORD);
 
-// ── Flag utilities ────────────────────────────────────────────────────────────
-
-function toFlagEmoji(value) {
-    if (!value) return '';
-    if ([...value].some(c => c.codePointAt(0) > 0x7F)) return value; // already emoji
-    if (/^[A-Za-z]{2}$/.test(value))
-        return [...value.toUpperCase()]
-            .map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65))
-            .join('');
-    return value;
-}
-
-let _flagOk = null;
-function canRenderFlags() {
-    if (_flagOk !== null) return _flagOk;
-    try {
-        const c = document.createElement('canvas');
-        c.width = c.height = 16;
-        const ctx = c.getContext('2d');
-        ctx.font = '14px serif';
-        ctx.fillText('🇺🇸', 0, 14);
-        _flagOk = ctx.getImageData(0, 0, 16, 16).data.some(p => p !== 0);
-    } catch { _flagOk = true; }
-    return _flagOk;
-}
-
-function renderFlag(rawFlag, countryCode) {
-    const code  = (countryCode || rawFlag || '').toUpperCase().replace(/[^A-Z]/g, '').slice(0, 2);
-    const emoji = toFlagEmoji(rawFlag || countryCode || '');
-    if (!emoji && !code) return '';
-    if (emoji && canRenderFlags())
-        return `<span class="flag-emoji" aria-label="${code} flag">${emoji}</span>`;
-    return (emoji ? `<span class="flag-emoji" aria-hidden="true">${emoji}</span>` : '')
-         + (code  ? `<span class="flag-code">${code}</span>` : '');
-}
-
-// ── Language ──────────────────────────────────────────────────────────────────
-
 let currentLang = null;
+
+// Use utility functions from the package
+const { toFlagEmoji, canRenderFlags, renderFlag } = FlagUtils;
+const { fmtPop } = FormatUtils;
 
 function buildHeaders(extra = {}) {
     const h = { Authorization: AUTH_HEADER, Accept: 'application/json', ...extra };
@@ -425,12 +394,6 @@ function renderSuggestions(cities, sugg, input, selDiv, key) {
     sugg.classList.add('active');
 }
 
-function fmtPop(n) {
-    if (n >= 1_000_000) return `${(n/1e6).toFixed(1)}M`;
-    if (n >= 1_000)     return `${(n/1e3).toFixed(0)}K`;
-    return String(n);
-}
-
 // ── Calculate distance ────────────────────────────────────────────────────────
 
 document.getElementById('searchBtn').addEventListener('click', async function () {
@@ -454,7 +417,7 @@ document.getElementById('searchBtn').addEventListener('click', async function ()
             body: JSON.stringify({ City1: c1.id, City2: c2.id }),
         });
         const data = await res.json();
-        const km   = data.distanceKm ?? data.data ?? data;
+        const distance   = data.Distance
         result.innerHTML = `
             <div style="font-size:15px;color:#555">
                 ${renderFlag(c1.flag, c1.countryCode)} <strong>${c1.name}</strong>${c1.country ? ' ('+c1.country+')' : ''}
@@ -462,7 +425,7 @@ document.getElementById('searchBtn').addEventListener('click', async function ()
                 ${renderFlag(c2.flag, c2.countryCode)} <strong>${c2.name}</strong>${c2.country ? ' ('+c2.country+')' : ''}
             </div>
             <div style="margin-top:14px;font-size:30px;font-weight:700;color:#5a48d4">
-                ${Number(km).toLocaleString(undefined,{maximumFractionDigits:2})} km
+                ${Number(distance).toLocaleString(undefined,{maximumFractionDigits:2})} km
             </div>`;
         result.classList.add('show');
     } catch (err) {

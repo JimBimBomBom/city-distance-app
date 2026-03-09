@@ -1,0 +1,34 @@
+{
+  "languages": [
+    {
+      "code": "en",
+      "name": "English",
+      "flag": "GB",
+      "countryCode": "GB"
+    },
+    {
+      "code": "de",
+      "name": "German",
+      "flag": "DE",
+      "countryCode": "DE"
+    },
+    {
+      "code": "fr",
+      "name": "French",
+      "flag": "FR",
+      "countryCode": "FR"
+    },
+    {
+      "code": "es",
+      "name": "Spanish",
+      "flag": "ES",
+      "countryCode": "ES"
+    },
+    {
+      "code": "it",
+      "name": "Italian",
+      "flag": "IT",
+      "countryCode": "IT"
+    }
+  ]
+}

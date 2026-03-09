@@ -1,31 +1,122 @@
-name: Deploy to GitHub Pages
+name: Test and Deploy to GitHub Pages
 
 on:
   push:
     branches:
       - main  # Deploy on push to the main branch
+  pull_request:
+    branches:
+      - main  # Run tests on PRs to main
 
 jobs:
-  build-and-deploy:
+  test:
     runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check out the repository
+      uses: actions/checkout@v4
+
+    # Setup Bun for faster builds
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
+      with:
+        bun-version: latest
+
+    # Setup Node.js for Playwright (Bun has limited Playwright support)
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    # Install dependencies with Bun (much faster)
+    - name: Install dependencies with Bun
+      run: bun install
+
+    # Build the package with Bun
+    - name: Build the package
+      run: bun run build
+
+    # Start CDS backend in Docker for testing
+    - name: Start CDS Backend
+      run: |
+        echo "🐳 Starting CDS backend container..."
+        docker-compose -f docker-compose.test.yml up -d
+        echo "⏳ Waiting for backend to be healthy..."
+        max_attempts=30
+        attempt=0
+        while [ $attempt -lt $max_attempts ]; do
+          if curl -s http://localhost:8080/health_check > /dev/null 2>&1; then
+            echo "✅ Backend is ready!"
+            break
+          fi
+          attempt=$((attempt + 1))
+          echo "Attempt $attempt/$max_attempts - waiting..."
+          sleep 2
+        done
+        if [ $attempt -eq $max_attempts ]; then
+          echo "❌ Backend failed to start"
+          docker-compose -f docker-compose.test.yml logs
+          exit 1
+        fi
+
+    # Install Playwright with Node.js
+    - name: Install Playwright Browsers
+      run: npx playwright install chromium
+
+    # Run E2E tests against the backend
+    - name: Run Playwright tests
+      run: npx playwright test
+      env:
+        CI: true
+        CDS_BACKEND_URL: http://localhost:8080
+
+    # Stop backend after tests
+    - name: Stop CDS Backend
+      if: always()
+      run: docker-compose -f docker-compose.test.yml down
+
+    # Upload test results
+    - name: Upload Playwright Report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: 30
+
+  build-and-deploy:
+    needs: test  # Only deploy if tests pass
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
     steps:
     - name: Check out the repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
+    # Setup Bun for deployment build
+    - name: Setup Bun
+      uses: oven-sh/setup-bun@v2
       with:
-        node-version: '16'
+        bun-version: latest
 
-    - name: Build the site
+    # Install and build with Bun
+    - name: Install dependencies and build
       run: |
-        echo "Injecting environment variables"
-        sed -i 's|__AUTH_USERNAME__|'${{ secrets.AUTH_USERNAME }}'|g' index.html
-        sed -i 's|__AUTH_PASSWORD__|'${{ secrets.AUTH_PASSWORD }}'|g' index.html
+        bun install
+        bun run build
 
+    # Inject secrets into the website
+    - name: Inject environment variables
+      run: |
+        echo "Injecting secrets into website..."
+        sed -i 's|__AUTH_USERNAME__|'${{ secrets.AUTH_USERNAME }}'|g' website/index.html
+        sed -i 's|__AUTH_PASSWORD__|'${{ secrets.AUTH_PASSWORD }}'|g' website/index.html
+
+    # Deploy to GitHub Pages
     - name: Deploy to GitHub Pages
-      uses: peaceiris/actions-gh-pages@v3
+      uses: peaceiris/actions-gh-pages@v4
       with:
-        github_token: ${{ secrets.TOKEN }}  # GitHub token is automatically available
-        publish_dir: ./  # Adjust to your build output directory
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./website

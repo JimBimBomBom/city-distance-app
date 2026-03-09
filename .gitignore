@@ -1,2 +1,31 @@
 node_modules
 dist
+
+# Playwright
+/test-results/
+/playwright-report/
+/playwright/.cache/
+/blob-report/
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker Data Volumes
+data/
+*.log
+
+# Environment files (keep the template ones)
+.env
+.env.local
+.env.*.local

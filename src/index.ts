@@ -228,3 +228,6 @@ export class CDSClient {
 
 // Export everything
 export default CDSClient;
+
+// Export utility classes
+export { FlagUtils, FormatUtils } from './utils';

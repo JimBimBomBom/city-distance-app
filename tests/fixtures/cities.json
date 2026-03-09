@@ -1,0 +1,76 @@
+{
+  "cities": [
+    {
+      "id": "1",
+      "name": "New York",
+      "countryCode": "US",
+      "country": "United States",
+      "adminRegion": "New York",
+      "population": 8405837,
+      "flag": "US"
+    },
+    {
+      "id": "2",
+      "name": "London",
+      "countryCode": "GB",
+      "country": "United Kingdom",
+      "adminRegion": "England",
+      "population": 8982000,
+      "flag": "GB"
+    },
+    {
+      "id": "3",
+      "name": "Tokyo",
+      "countryCode": "JP",
+      "country": "Japan",
+      "adminRegion": "Tokyo",
+      "population": 13960000,
+      "flag": "JP"
+    },
+    {
+      "id": "4",
+      "name": "Paris",
+      "countryCode": "FR",
+      "country": "France",
+      "adminRegion": "Île-de-France",
+      "population": 2161000,
+      "flag": "FR"
+    },
+    {
+      "id": "5",
+      "name": "Berlin",
+      "countryCode": "DE",
+      "country": "Germany",
+      "adminRegion": "Berlin",
+      "population": 3645000,
+      "flag": "DE"
+    },
+    {
+      "id": "6",
+      "name": "Sydney",
+      "countryCode": "AU",
+      "country": "Australia",
+      "adminRegion": "New South Wales",
+      "population": 5312000,
+      "flag": "AU"
+    },
+    {
+      "id": "7",
+      "name": "Toronto",
+      "countryCode": "CA",
+      "country": "Canada",
+      "adminRegion": "Ontario",
+      "population": 2731000,
+      "flag": "CA"
+    },
+    {
+      "id": "8",
+      "name": "Singapore",
+      "countryCode": "SG",
+      "country": "Singapore",
+      "adminRegion": "Singapore",
+      "population": 5686000,
+      "flag": "SG"
+    }
+  ]
+}
