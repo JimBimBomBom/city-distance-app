@@ -35,15 +35,7 @@ services:
     networks:
       - cds-network
     volumes:
-      # - ./data/mysql:/var/lib/mysql
-      - type: bind
-        source: ./mysql-custom.cnf
-        target: /etc/mysql/conf.d/custom.cnf
-        read_only: true
-    command: >
-      mysqld 
-      --require_secure_transport=OFF
-      --caching_sha2_password_auto_generate_rsa_keys=OFF
+      - ./data/mysql:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=${MYSQL_ROOT_PASSWORD:-changeme}"]
       interval: 10s
