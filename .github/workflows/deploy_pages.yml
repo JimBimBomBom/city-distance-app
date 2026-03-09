@@ -39,10 +39,56 @@ jobs:
     # Start CDS backend in Docker for testing
     - name: Start CDS Backend
       run: |
-        echo "🐳 Starting CDS backend container..."
+        echo "🐳 Starting CDS backend containers..."
         docker compose -f docker-compose.test.yml up -d
-        echo "⏳ Waiting for backend to be healthy..."
-        max_attempts=80
+        
+        # Wait for Elasticsearch to be healthy (it takes the longest)
+        echo "⏳ Waiting for Elasticsearch to be healthy..."
+        max_attempts=30
+        attempt=0
+        while [ $attempt -lt $max_attempts ]; do
+          if docker compose -f docker-compose.test.yml ps elasticsearch | grep -q "healthy"; then
+            echo "✅ Elasticsearch is healthy!"
+            break
+          fi
+          attempt=$((attempt + 1))
+          echo "Attempt $attempt/$max_attempts - Elasticsearch not ready yet..."
+          docker compose -f docker-compose.test.yml logs --tail=5 elasticsearch 2>/dev/null || true
+          sleep 5
+        done
+        
+        if [ $attempt -eq $max_attempts ]; then
+          echo "❌ Elasticsearch failed to become healthy"
+          echo "=== Elasticsearch Container Logs ==="
+          docker compose -f docker-compose.test.yml logs elasticsearch
+          echo "=== Container Status ==="
+          docker compose -f docker-compose.test.yml ps
+          echo "=== Docker System Info ==="
+          docker system df
+          exit 1
+        fi
+        
+        # Wait for MySQL to be healthy
+        echo "⏳ Waiting for MySQL to be healthy..."
+        attempt=0
+        while [ $attempt -lt $max_attempts ]; do
+          if docker compose -f docker-compose.test.yml ps db | grep -q "healthy"; then
+            echo "✅ MySQL is healthy!"
+            break
+          fi
+          attempt=$((attempt + 1))
+          echo "Attempt $attempt/$max_attempts - MySQL not ready yet..."
+          sleep 2
+        done
+        
+        if [ $attempt -eq $max_attempts ]; then
+          echo "❌ MySQL failed to become healthy"
+          docker compose -f docker-compose.test.yml logs db
+          exit 1
+        fi
+        
+        # Wait for backend
+        echo "⏳ Waiting for CDS Backend to be ready..."
         attempt=0
         while [ $attempt -lt $max_attempts ]; do
           if curl -s http://localhost:8080/health_check > /dev/null 2>&1; then
@@ -50,12 +96,13 @@ jobs:
             break
           fi
           attempt=$((attempt + 1))
-          echo "Attempt $attempt/$max_attempts - waiting..."
+          echo "Attempt $attempt/$max_attempts - Backend not ready yet..."
           sleep 2
         done
+        
         if [ $attempt -eq $max_attempts ]; then
           echo "❌ Backend failed to start"
-          docker compose -f docker-compose.test.yml logs
+          docker compose -f docker-compose.test.yml logs cds-backend
           exit 1
         fi
 

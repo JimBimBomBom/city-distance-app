@@ -45,38 +45,45 @@ services:
       start_period: 30s
 
   elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
-        container_name: elasticsearch
-        environment:
-            - ELASTIC_PASSWORD=testPassword123
-            - node.name=elasticsearch
-            - discovery.type=single-node
-            - bootstrap.memory_lock=true
-            - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
-            - xpack.security.enabled=false
-            - http.max_content_length=200mb
-            - http.cors.enabled=true
-            - cluster.routing.allocation.disk.threshold_enabled=true
-            - cluster.routing.allocation.disk.watermark.low=95%
-            - cluster.routing.allocation.disk.watermark.high=97%
-            - cluster.routing.allocation.disk.watermark.flood_stage=98%
-        ulimits:
-            memlock:
-                soft: -1
-                hard: -1
-        volumes:
-            - ./data/elasticsearch:/usr/share/elasticsearch/data
-        ports:
-            - "9200:9200"
-        networks:
-            - cds-network
-        restart: unless-stopped
-        healthcheck:
-            test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-            interval: 10s
-            timeout: 5s
-            retries: 10
-            start_period: 90s
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.0
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - http.max_content_length=200mb
+      - cluster.routing.allocation.disk.threshold_enabled=false
+      - ingest.geoip.downloader.enabled=false
+      - cluster.initial_master_nodes=elasticsearch
+      - action.auto_create_index=true
+    mem_limit: 2g
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    # CI-optimized: Don't mount volumes to avoid permission issues
+    # Data will be stored in container (non-persistent for CI)
+    # For local development, uncomment the volumes below:
+    # volumes:
+    #   - ./data/elasticsearch:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - cds-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9200/_cluster/health || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 120s
 
 networks:
   cds-network:
