@@ -49,35 +49,25 @@ services:
     environment:
       - node.name=elasticsearch
       - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
       - xpack.security.enabled=false
       - xpack.security.enrollment.enabled=false
       - xpack.security.http.ssl.enabled=false
       - xpack.security.transport.ssl.enabled=false
       - cluster.routing.allocation.disk.threshold_enabled=false
       - ingest.geoip.downloader.enabled=false
-      - cluster.initial_master_nodes=elasticsearch
-      - action.auto_create_index=true
       - http.host=0.0.0.0
-      - transport.host=127.0.0.1
-    mem_limit: 1g
-    ulimits:
-      memlock:
-        soft: -1
-        hard: -1
-      nofile:
-        soft: 65536
-        hard: 65536
+    mem_limit: 2g
     ports:
       - "9200:9200"
     networks:
       - cds-network
     healthcheck:
-      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q 'status' || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 30
-      start_period: 180s
+      start_period: 60s
 
 networks:
   cds-network:

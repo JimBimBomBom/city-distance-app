@@ -21,6 +21,9 @@
     "backend:start:win": "powershell -ExecutionPolicy Bypass -File scripts/start-backend.ps1",
     "backend:stop": "docker compose -f docker-compose.test.yml down",
     "backend:logs": "docker compose -f docker-compose.test.yml logs -f",
+    "backend:debug": "bash scripts/debug-docker.sh",
+    "backend:debug:win": "powershell -ExecutionPolicy Bypass -File scripts/debug-docker.ps1",
+    "es:test": "docker compose -f docker-compose.es-only.yml up -d && echo 'Waiting 30s for ES to start...' && sleep 30 && curl http://localhost:9200 && docker compose -f docker-compose.es-only.yml down",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
