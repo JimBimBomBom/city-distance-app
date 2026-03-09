@@ -35,6 +35,7 @@ services:
     networks:
       - cds-network
     volumes:
+      - ./MySQLInit.sql:/docker-entrypoint-initdb.d/init.sql
       - ./data/mysql:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "--password=${MYSQL_ROOT_PASSWORD:-changeme}"]
