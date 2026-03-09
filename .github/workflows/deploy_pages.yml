@@ -42,7 +42,7 @@ jobs:
         echo "🐳 Starting CDS backend container..."
         docker compose -f docker-compose.test.yml up -d
         echo "⏳ Waiting for backend to be healthy..."
-        max_attempts=30
+        max_attempts=80
         attempt=0
         while [ $attempt -lt $max_attempts ]; do
           if curl -s http://localhost:8080/health_check > /dev/null 2>&1; then
