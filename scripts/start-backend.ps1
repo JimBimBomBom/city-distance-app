@@ -4,7 +4,7 @@ $ErrorActionPreference = "Stop"
 Write-Host "🐳 Starting CDS backend for testing..." -ForegroundColor Cyan
 
 # Start the backend
-docker-compose -f docker-compose.test.yml up -d
+docker compose -f docker-compose.test.yml up -d
 
 # Wait for backend to be healthy
 Write-Host "⏳ Waiting for backend to be ready..." -ForegroundColor Yellow
@@ -30,7 +30,7 @@ while ($attempt -lt $maxAttempts -and -not $ready) {
 
 if (-not $ready) {
     Write-Host "❌ Backend failed to start within timeout" -ForegroundColor Red
-    docker-compose -f docker-compose.test.yml logs
-    docker-compose -f docker-compose.test.yml down
+    docker compose -f docker-compose.test.yml logs
+    docker compose -f docker-compose.test.yml down
     exit 1
 }

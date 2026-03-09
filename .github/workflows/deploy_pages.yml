@@ -40,7 +40,7 @@ jobs:
     - name: Start CDS Backend
       run: |
         echo "🐳 Starting CDS backend container..."
-        docker-compose -f docker-compose.test.yml up -d
+        docker compose -f docker-compose.test.yml up -d
         echo "⏳ Waiting for backend to be healthy..."
         max_attempts=30
         attempt=0
@@ -55,7 +55,7 @@ jobs:
         done
         if [ $attempt -eq $max_attempts ]; then
           echo "❌ Backend failed to start"
-          docker-compose -f docker-compose.test.yml logs
+          docker compose -f docker-compose.test.yml logs
           exit 1
         fi
 
@@ -73,7 +73,7 @@ jobs:
     # Stop backend after tests
     - name: Stop CDS Backend
       if: always()
-      run: docker-compose -f docker-compose.test.yml down
+      run: docker compose -f docker-compose.test.yml down
 
     # Upload test results
     - name: Upload Playwright Report

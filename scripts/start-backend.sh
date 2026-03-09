@@ -4,7 +4,7 @@ set -e
 echo "🐳 Starting CDS backend for testing..."
 
 # Start the backend
-docker-compose -f docker-compose.test.yml up -d
+docker compose -f docker-compose.test.yml up -d
 
 # Wait for backend to be healthy
 echo "⏳ Waiting for backend to be ready..."
@@ -23,6 +23,6 @@ while [ $attempt -lt $max_attempts ]; do
 done
 
 echo "❌ Backend failed to start within timeout"
-docker-compose -f docker-compose.test.yml logs
-docker-compose -f docker-compose.test.yml down
+docker compose -f docker-compose.test.yml logs
+docker compose -f docker-compose.test.yml down
 exit 1
