@@ -39,17 +39,8 @@ jobs:
     # Start CDS backend in Docker for testing
     - name: Start CDS Backend
       run: |
-        echo "🖥️ System Info:"
-        free -h
-        df -h
-        echo ""
-        
         echo "🐳 Starting CDS backend containers..."
-        docker compose -f docker-compose.test.yml up -d
-        
-        echo "⏳ Waiting for containers to initialize (60s)..."
-        sleep 60
-        
+        docker compose -f docker-compose.test.yml up         
         # Wait for Elasticsearch to be healthy (it takes the longest)
         echo "⏳ Waiting for Elasticsearch to be healthy..."
         max_attempts=60
