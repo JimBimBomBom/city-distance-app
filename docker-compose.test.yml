@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   cds-backend:
     image: jimbimdocker/city-distance-service:0.3.4
@@ -26,19 +24,20 @@ services:
         condition: service_healthy
 
   db:
-    image: mysql:latest
+    image: mysql:8.0
     container_name: cds_mysql_db
     env_file:
       - path: "DefaultDatabaseEnv.env"
         required: true
+    environment:
+      - MYSQL_ROOT_PASSWORD=password123
+      - MYSQL_DATABASE=cds_db
     networks:
       - cds-network
     volumes:
       - ./MySQLInit.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./data/mysql:/var/lib/mysql
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -50,17 +49,18 @@ services:
     environment:
       - node.name=elasticsearch
       - discovery.type=single-node
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ES_JAVA_OPTS=-Xms256m -Xmx256m"
       - xpack.security.enabled=false
       - xpack.security.enrollment.enabled=false
       - xpack.security.http.ssl.enabled=false
       - xpack.security.transport.ssl.enabled=false
-      - http.max_content_length=200mb
       - cluster.routing.allocation.disk.threshold_enabled=false
       - ingest.geoip.downloader.enabled=false
       - cluster.initial_master_nodes=elasticsearch
       - action.auto_create_index=true
-    mem_limit: 2g
+      - http.host=0.0.0.0
+      - transport.host=127.0.0.1
+    mem_limit: 1g
     ulimits:
       memlock:
         soft: -1
@@ -68,22 +68,16 @@ services:
       nofile:
         soft: 65536
         hard: 65536
-    # CI-optimized: Don't mount volumes to avoid permission issues
-    # Data will be stored in container (non-persistent for CI)
-    # For local development, uncomment the volumes below:
-    # volumes:
-    #   - ./data/elasticsearch:/usr/share/elasticsearch/data
     ports:
       - "9200:9200"
     networks:
       - cds-network
-    restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:9200/_cluster/health || exit 1"]
-      interval: 15s
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cluster/health | grep -q 'status' || exit 1"]
+      interval: 10s
       timeout: 10s
-      retries: 20
-      start_period: 120s
+      retries: 30
+      start_period: 180s
 
 networks:
   cds-network:

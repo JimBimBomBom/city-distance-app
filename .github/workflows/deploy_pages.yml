@@ -39,32 +39,54 @@ jobs:
     # Start CDS backend in Docker for testing
     - name: Start CDS Backend
       run: |
+        echo "🖥️ System Info:"
+        free -h
+        df -h
+        echo ""
+        
         echo "🐳 Starting CDS backend containers..."
         docker compose -f docker-compose.test.yml up -d
         
+        echo "⏳ Waiting for containers to initialize (60s)..."
+        sleep 60
+        
         # Wait for Elasticsearch to be healthy (it takes the longest)
         echo "⏳ Waiting for Elasticsearch to be healthy..."
-        max_attempts=30
+        max_attempts=60
         attempt=0
         while [ $attempt -lt $max_attempts ]; do
-          if docker compose -f docker-compose.test.yml ps elasticsearch | grep -q "healthy"; then
+          container_status=$(docker compose -f docker-compose.test.yml ps elasticsearch --format "table {{.Status}}" | tail -n 1)
+          echo "Attempt $attempt/$max_attempts - Elasticsearch status: $container_status"
+          
+          if echo "$container_status" | grep -q "healthy"; then
             echo "✅ Elasticsearch is healthy!"
             break
           fi
+          
+          # Show last 20 lines of logs every 10 attempts
+          if [ $((attempt % 10)) -eq 0 ]; then
+            echo "=== Recent Elasticsearch Logs ==="
+            docker compose -f docker-compose.test.yml logs --tail=20 elasticsearch 2>/dev/null || true
+          fi
+          
+          # Try to curl ES directly to see if it's responding
+          if [ $attempt -gt 20 ]; then
+            echo "Testing ES endpoint directly..."
+            curl -s http://localhost:9200/_cluster/health 2>/dev/null || echo "ES not responding yet"
+          fi
+          
           attempt=$((attempt + 1))
-          echo "Attempt $attempt/$max_attempts - Elasticsearch not ready yet..."
-          docker compose -f docker-compose.test.yml logs --tail=5 elasticsearch 2>/dev/null || true
           sleep 5
         done
         
         if [ $attempt -eq $max_attempts ]; then
           echo "❌ Elasticsearch failed to become healthy"
-          echo "=== Elasticsearch Container Logs ==="
+          echo "=== Full Elasticsearch Container Logs ==="
           docker compose -f docker-compose.test.yml logs elasticsearch
           echo "=== Container Status ==="
           docker compose -f docker-compose.test.yml ps
-          echo "=== Docker System Info ==="
-          docker system df
+          echo "=== Docker Stats ==="
+          docker stats --no-stream --format "table {{.Container}},{{.CPUPerc}},{{.MemUsage}},{{.Status}}" 2>/dev/null || true
           exit 1
         fi
         
@@ -72,7 +94,8 @@ jobs:
         echo "⏳ Waiting for MySQL to be healthy..."
         attempt=0
         while [ $attempt -lt $max_attempts ]; do
-          if docker compose -f docker-compose.test.yml ps db | grep -q "healthy"; then
+          container_status=$(docker compose -f docker-compose.test.yml ps db --format "table {{.Status}}" | tail -n 1)
+          if echo "$container_status" | grep -q "healthy"; then
             echo "✅ MySQL is healthy!"
             break
           fi
