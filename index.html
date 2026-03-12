@@ -4,18 +4,444 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>City Distance Application</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/swagger-ui/3.52.0/swagger-ui.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white; border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px; max-width: 600px; width: 100%;
+        }
+        .header {
+            display: flex; align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px; gap: 12px; flex-wrap: wrap;
+        }
+        h1 { color: #333; font-size: 26px; white-space: nowrap; }
+
+        /* Language selector */
+        .lang-selector { position: relative; }
+        .lang-btn {
+            display: flex; align-items: center; gap: 6px;
+            padding: 8px 12px; border: 2px solid #e0e0e0; border-radius: 8px;
+            background: white; font-size: 14px; font-weight: 500; color: #555;
+            cursor: pointer; white-space: nowrap;
+            width: auto; margin-top: 0; line-height: 1.4;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .lang-btn:hover:not(:disabled) {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+            transform: none;
+        }
+        .lang-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .lang-chevron { font-size: 10px; opacity: 0.5; transition: transform 0.2s; }
+        .lang-btn.open .lang-chevron { transform: rotate(180deg); }
+        .lang-dropdown {
+            display: none; position: absolute;
+            top: calc(100% + 6px); right: 0; min-width: 180px;
+            background: white; border: 2px solid #667eea; border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 2000; overflow: hidden;
+        }
+        .lang-dropdown.open { display: block; }
+        .lang-option {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; cursor: pointer; font-size: 14px; color: #333;
+            border-bottom: 1px solid #f0f0f0; transition: background 0.15s;
+        }
+        .lang-option:last-child { border-bottom: none; }
+        .lang-option:hover { background: #f8f9ff; }
+        .lang-option.active { background: #ede9ff; font-weight: 600; color: #5a48d4; }
+        .lang-flag-cell {
+            font-size: 20px; line-height: 1;
+            font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+        }
+        .lang-status { padding: 12px 14px; font-size: 13px; color: #999; text-align: center; }
+
+        /* City inputs */
+        .input-wrapper { position: relative; margin-bottom: 25px; }
+        label { display: block; margin-bottom: 8px; color: #555; font-weight: 500; font-size: 14px; }
+        input[type="text"] {
+            width: 100%; padding: 12px 16px;
+            border: 2px solid #e0e0e0; border-radius: 10px;
+            font-size: 16px; transition: all 0.3s;
+        }
+        input[type="text"]:focus {
+            outline: none; border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+        .suggestions {
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: white; border: 2px solid #667eea;
+            border-top: none; border-radius: 0 0 10px 10px;
+            max-height: 300px; overflow-y: auto;
+            z-index: 1000; display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .suggestions.active { display: block; }
+        .suggestion-item {
+            padding: 12px 16px; cursor: pointer;
+            border-bottom: 1px solid #f0f0f0; transition: background 0.2s;
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item:hover, .suggestion-item.kbd-selected { background: #f8f9ff; }
+        .city-main {
+            font-weight: 600; color: #333;
+            display: flex; align-items: center; gap: 8px; margin-bottom: 3px;
+        }
+        .flag-emoji {
+            font-size: 20px; line-height: 1;
+            font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif;
+        }
+        .flag-code {
+            font-size: 11px; font-weight: 700;
+            background: #e0e0e0; color: #555;
+            padding: 1px 5px; border-radius: 3px; letter-spacing: 0.5px;
+        }
+        .city-details { font-size: 13px; color: #666; display: flex; gap: 6px; flex-wrap: wrap; }
+        .detail-badge { background: #f0f0f0; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .selected-city {
+            display: none; margin-top: 8px; padding: 8px 12px;
+            background: #e8f5e9; border-radius: 6px; font-size: 13px; color: #2e7d32;
+        }
+        .selected-city.show { display: block; }
+
+        /* Calculate button */
+        .calc-btn {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 10px;
+            font-size: 16px; font-weight: 600; cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s; margin-top: 10px;
+        }
+        .calc-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(102,126,234,0.4); }
+        .calc-btn:active { transform: translateY(0); }
+        .calc-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+        /* Result */
+        #result {
+            margin-top: 20px; padding: 20px; background: #f8f9ff;
+            border-radius: 10px; text-align: center;
+            display: none; line-height: 1.8;
+        }
+        #result.show { display: block; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Messages */
+        .msg {
+            border-radius: 8px; margin-top: 14px;
+            padding: 12px 16px; font-size: 14px;
+            display: none; line-height: 1.5;
+        }
+        .msg.show { display: block; }
+        .msg-validation {
+            color: #92400e; background: #fffbeb; border: 1px solid #f59e0b;
+        }
+        .msg-validation::before { content: "⚠️  "; }
+        .msg-server {
+            color: #991b1b; background: #fef2f2; border: 1px solid #f87171;
+        }
+        .msg-server::before { content: "🔴  "; }
+        .msg-detail { margin-top: 6px; font-size: 12px; opacity: 0.7; font-family: monospace; }
+        .loading { display: none; text-align: center; color: #667eea; margin-top: 14px; font-size: 14px; }
+        .loading.show { display: block; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>City Distance Application</h1>
-        <input type="text" id="city1" placeholder="City 1", required>
-        <input type="text" id="city2" placeholder="City 2", required>
-        <button id="searchBtn">Search</button>
-        <p id="result"></p>
+<div class="container">
+    <div class="header">
+        <h1>🌍 City Distance</h1>
+        <div class="lang-selector" id="langSelector">
+            <button class="lang-btn" id="langBtn" disabled>
+                <span id="langBtnFlag"></span>
+                <span id="langBtnLabel">Language</span>
+                <span class="lang-chevron">▼</span>
+            </button>
+            <div class="lang-dropdown" id="langDropdown">
+                <div class="lang-status">Loading…</div>
+            </div>
+        </div>
     </div>
 
-    <script src="script.js"></script>
+    <div class="input-wrapper">
+        <label for="city1">First City</label>
+        <input type="text" id="city1" placeholder="Start typing a city name…" autocomplete="off">
+        <div class="suggestions" id="suggestions1"></div>
+        <div class="selected-city" id="selected1"></div>
+    </div>
+
+    <div class="input-wrapper">
+        <label for="city2">Second City</label>
+        <input type="text" id="city2" placeholder="Start typing a city name…" autocomplete="off">
+        <div class="suggestions" id="suggestions2"></div>
+        <div class="selected-city" id="selected2"></div>
+    </div>
+
+    <button class="calc-btn" id="searchBtn">Calculate Distance</button>
+
+    <div class="loading" id="loading">Calculating…</div>
+    <div class="msg msg-validation" id="msgValidation"></div>
+    <div class="msg msg-server" id="msgServer">
+        <span id="msgServerText"></span>
+        <div class="msg-detail" id="msgServerDetail"></div>
+    </div>
+    <div id="result"></div>
+</div>
+
+<script type="module">
+// Import CDS client utilities from npm package via CDN
+import { FlagUtils, FormatUtils } from 'https://unpkg.com/@xfilipnamefilip/cds-client@latest/dist/index.mjs';
+
+const API_BASE      = 'https://cds2.moojtube.com:8443';
+const AUTH_USERNAME = 'User';
+const AUTH_PASSWORD = 'SecretPassword';
+const AUTH_HEADER   = 'Basic ' + btoa(AUTH_USERNAME + ':' + AUTH_PASSWORD);
+
+let currentLang = null;
+
+// Use utility functions from the package
+const { toFlagEmoji, canRenderFlags, renderFlag } = FlagUtils;
+const { fmtPop } = FormatUtils;
+
+function buildHeaders(extra = {}) {
+    const h = { Authorization: AUTH_HEADER, Accept: 'application/json', ...extra };
+    if (currentLang?.code) h['Accept-Language'] = currentLang.code;
+    return h;
+}
+
+// ── Error handling ────────────────────────────────────────────────────────────
+
+function clearMessages() {
+    ['msgValidation','msgServer','result'].forEach(id =>
+        document.getElementById(id).classList.remove('show'));
+}
+
+function showValidationError(msg) {
+    const el = document.getElementById('msgValidation');
+    el.textContent = msg; el.classList.add('show');
+}
+
+function showServerError(msg, detail = '') {
+    document.getElementById('msgServerText').textContent = msg;
+    document.getElementById('msgServerDetail').textContent = detail;
+    document.getElementById('msgServer').classList.add('show');
+}
+
+async function apiFetch(url, opts = {}) {
+    let res;
+    try { res = await fetch(url, opts); }
+    catch (err) {
+        throw { clientSide: false,
+                message: 'Could not reach the server. Check your network connection.',
+                detail: err.message };
+    }
+    if (res.ok) return res;
+
+    let serverMsg = '';
+    try { const b = await res.clone().json(); serverMsg = b.error || b.message || ''; }
+    catch { serverMsg = await res.text().catch(() => ''); }
+
+    const is4xx = res.status >= 400 && res.status < 500;
+    throw {
+        clientSide: is4xx,
+        message: is4xx
+            ? `Request error (${res.status})${serverMsg ? ': ' + serverMsg : '.'}`
+            : `Server error (${res.status}). Please try again later.`,
+        detail: serverMsg
+            ? `Server says: "${serverMsg}"`
+            : `HTTP ${res.status} ${res.statusText}`,
+    };
+}
+
+// ── Language selector ─────────────────────────────────────────────────────────
+
+async function loadLanguages() {
+    const dd  = document.getElementById('langDropdown');
+    const btn = document.getElementById('langBtn');
+    try {
+        const res   = await apiFetch(`${API_BASE}/languages`, { headers: buildHeaders() });
+        const body  = await res.json();
+        const langs = Array.isArray(body) ? body : (body.data || []);
+
+        if (!langs.length) {
+            dd.innerHTML = '<div class="lang-status">No languages available.</div>';
+            btn.disabled = false; return;
+        }
+        dd.innerHTML = '';
+        langs.forEach(lang => {
+            const opt = document.createElement('div');
+            opt.className = 'lang-option';
+            opt.dataset.code = lang.code;
+            opt.innerHTML = `<span class="lang-flag-cell">${toFlagEmoji(lang.flag || lang.countryCode || '')}</span>
+                             <span>${lang.name || lang.code}</span>`;
+            opt.addEventListener('click', () => chooseLang(lang));
+            dd.appendChild(opt);
+        });
+        chooseLang(langs[0]);
+        btn.disabled = false;
+    } catch (err) {
+        dd.innerHTML = '<div class="lang-status" style="color:#c00">Failed to load languages.</div>';
+        btn.disabled = false;
+        console.warn('Language load error:', err);
+    }
+}
+
+function chooseLang(lang) {
+    currentLang = lang;
+    document.getElementById('langBtnFlag').textContent  = toFlagEmoji(lang.flag || lang.countryCode || '');
+    document.getElementById('langBtnLabel').textContent = lang.name || lang.code;
+    document.querySelectorAll('.lang-option').forEach(o =>
+        o.classList.toggle('active', o.dataset.code === lang.code));
+    closeLangDropdown();
+}
+
+function closeLangDropdown() {
+    document.getElementById('langDropdown').classList.remove('open');
+    document.getElementById('langBtn').classList.remove('open');
+}
+
+document.getElementById('langBtn').addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('langDropdown').classList.toggle('open');
+    document.getElementById('langBtn').classList.toggle('open');
+});
+document.addEventListener('click', closeLangDropdown);
+document.getElementById('langDropdown').addEventListener('click', e => e.stopPropagation());
+
+// ── Autocomplete ──────────────────────────────────────────────────────────────
+
+const selectedCities = { city1: null, city2: null };
+const debounceTimers = {};
+let kbFocus = -1;
+
+function setupAutocomplete(inputId, sugId, selId, key) {
+    const input = document.getElementById(inputId);
+    const sugg  = document.getElementById(sugId);
+    const selDiv= document.getElementById(selId);
+
+    input.addEventListener('input', () => {
+        const q = input.value.trim();
+        selectedCities[key] = null;
+        selDiv.classList.remove('show');
+        if (q.length < 2) { sugg.classList.remove('active'); return; }
+        clearTimeout(debounceTimers[key]);
+        debounceTimers[key] = setTimeout(async () => {
+            try {
+                const res  = await apiFetch(`${API_BASE}/suggestions?q=${encodeURIComponent(q)}`, { headers: buildHeaders() });
+                const body = await res.json();
+                renderSuggestions(Array.isArray(body) ? body : (body.data || []), sugg, input, selDiv, key);
+            } catch (err) {
+                sugg.classList.remove('active');
+                clearMessages();
+                err.clientSide ? showValidationError(err.message) : showServerError(err.message, err.detail);
+            }
+        }, 300);
+    });
+
+    input.addEventListener('keydown', e => {
+        const items = [...sugg.querySelectorAll('.suggestion-item')];
+        if (!items.length) return;
+        if (e.key === 'ArrowDown')  { e.preventDefault(); kbFocus = (kbFocus + 1) % items.length; }
+        else if (e.key === 'ArrowUp') { e.preventDefault(); kbFocus = (kbFocus - 1 + items.length) % items.length; }
+        else if (e.key === 'Enter' && kbFocus >= 0) { e.preventDefault(); items[kbFocus].click(); return; }
+        else return;
+        items.forEach((it, i) => it.classList.toggle('kbd-selected', i === kbFocus));
+        items[kbFocus]?.scrollIntoView({ block: 'nearest' });
+    });
+
+    document.addEventListener('click', e => {
+        if (!input.contains(e.target) && !sugg.contains(e.target)) {
+            sugg.classList.remove('active'); kbFocus = -1;
+        }
+    });
+}
+
+function renderSuggestions(cities, sugg, input, selDiv, key) {
+    sugg.innerHTML = ''; kbFocus = -1;
+    if (!cities?.length) { sugg.classList.remove('active'); return; }
+    cities.forEach(city => {
+        const el = document.createElement('div');
+        el.className = 'suggestion-item';
+        const badges = [
+            city.country     && `<span class="detail-badge">${city.country}</span>`,
+            city.adminRegion && `<span class="detail-badge">${city.adminRegion}</span>`,
+            city.population  && `<span class="detail-badge">${fmtPop(city.population)}</span>`,
+        ].filter(Boolean).join('');
+        el.innerHTML = `
+            <div class="city-main">
+                ${renderFlag(city.flag, city.countryCode)}
+                <span>${city.name}</span>
+            </div>
+            ${badges ? `<div class="city-details">${badges}</div>` : ''}`;
+        el.addEventListener('click', () => {
+            selectedCities[key] = city;
+            input.value = city.name;
+            sugg.classList.remove('active'); kbFocus = -1;
+            selDiv.innerHTML = `✓ ${toFlagEmoji(city.flag || city.countryCode || '')} <strong>${city.name}</strong>${city.country ? ', ' + city.country : ''}${city.adminRegion ? ' (' + city.adminRegion + ')' : ''}`;
+            selDiv.classList.add('show');
+        });
+        sugg.appendChild(el);
+    });
+    sugg.classList.add('active');
+}
+
+// ── Calculate distance ────────────────────────────────────────────────────────
+
+document.getElementById('searchBtn').addEventListener('click', async function () {
+    const c1 = selectedCities.city1;
+    const c2 = selectedCities.city2;
+    clearMessages();
+
+    if (!c1 && !c2) { showValidationError('Please select both cities from the suggestions list.'); return; }
+    if (!c1)        { showValidationError('Please select the first city from the suggestions list.'); return; }
+    if (!c2)        { showValidationError('Please select the second city from the suggestions list.'); return; }
+
+    const loading = document.getElementById('loading');
+    const result  = document.getElementById('result');
+    loading.classList.add('show');
+    this.disabled = true;
+
+    try {
+        const res  = await apiFetch(`${API_BASE}/distance`, {
+            method: 'POST',
+            headers: buildHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ City1: c1.id, City2: c2.id }),
+        });
+        const data = await res.json();
+        const distance   = data.Distance
+        result.innerHTML = `
+            <div style="font-size:15px;color:#555">
+                ${renderFlag(c1.flag, c1.countryCode)} <strong>${c1.name}</strong>${c1.country ? ' ('+c1.country+')' : ''}
+                &nbsp;↔&nbsp;
+                ${renderFlag(c2.flag, c2.countryCode)} <strong>${c2.name}</strong>${c2.country ? ' ('+c2.country+')' : ''}
+            </div>
+            <div style="margin-top:14px;font-size:30px;font-weight:700;color:#5a48d4">
+                ${Number(distance).toLocaleString(undefined,{maximumFractionDigits:2})} km
+            </div>`;
+        result.classList.add('show');
+    } catch (err) {
+        err.clientSide
+            ? showValidationError(err.message)
+            : showServerError(err.message, err.detail);
+    } finally {
+        loading.classList.remove('show');
+        this.disabled = false;
+    }
+});
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+setupAutocomplete('city1', 'suggestions1', 'selected1', 'city1');
+setupAutocomplete('city2', 'suggestions2', 'selected2', 'city2');
+loadLanguages();
+</script>
 </body>
 </html>
