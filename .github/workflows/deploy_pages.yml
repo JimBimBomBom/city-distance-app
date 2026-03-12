@@ -8,6 +8,12 @@ on:
     branches:
       - main  # Run tests on PRs to main
 
+# Permissions needed for GitHub Pages deployment
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -239,9 +245,10 @@ jobs:
         sed -i 's|__AUTH_USERNAME__|'${{ secrets.AUTH_USERNAME }}'|g' website/index.html
         sed -i 's|__AUTH_PASSWORD__|'${{ secrets.AUTH_PASSWORD }}'|g' website/index.html
 
-    # Deploy to GitHub Pages
+    # Deploy to GitHub Pages using PAT
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:
-        github_token: ${{ secrets.GITHUB_TOKEN }}
+        personal_token: ${{ secrets.PAT }}
         publish_dir: ./website
+        commit_message: "Deploy to GitHub Pages [skip ci]"
