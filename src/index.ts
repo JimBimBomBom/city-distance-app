@@ -1,5 +1,8 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
-import axiosRetry from 'axios-retry';
+/**
+ * CDS Client - Browser & Node.js compatible client for City Distance Service
+ * Uses native fetch API (works in all modern browsers and Node.js 18+)
+ * No external dependencies.
+ */
 
 export interface CDSClientConfig {
   baseURL: string;
@@ -7,6 +10,13 @@ export interface CDSClientConfig {
   password?: string;
   timeout?: number;
   retries?: number;
+}
+
+export interface Language {
+  code: string;
+  name: string;
+  flag?: string;
+  countryCode?: string;
 }
 
 export interface CitySuggestion {
@@ -19,215 +29,143 @@ export interface CitySuggestion {
   flag: string;
 }
 
-export interface DistanceRequest {
-  city1: string;
-  city2: string;
-}
-
-export interface DistanceResponse {
-  distanceKm: number;
-  city1: string;
-  city2: string;
-  message?: string;
-}
-
 export class CDSError extends Error {
-  constructor(
-    message: string,
-    public statusCode?: number,
-    public response?: any
-  ) {
+  public statusCode?: number;
+  public response?: any;
+  public clientSide: boolean;
+
+  constructor(message: string, statusCode?: number, response?: any) {
     super(message);
     this.name = 'CDSError';
+    this.statusCode = statusCode;
+    this.response = response;
+    this.clientSide = statusCode !== undefined && statusCode >= 400 && statusCode < 500;
   }
 }
 
 export class CDSClient {
-  private client: AxiosInstance;
-  private config: Required<CDSClientConfig>;
+  private baseURL: string;
+  private authHeader: string | null;
+  private timeout: number;
+  private retries: number;
+  private language: string | null = null;
 
   constructor(config: CDSClientConfig) {
-    // Normalize base URL
-    this.config = {
-      baseURL: this.normalizeURL(config.baseURL),
-      username: config.username || '',
-      password: config.password || '',
-      timeout: config.timeout || 30000,
-      retries: config.retries || 3,
-    };
+    this.baseURL = config.baseURL.replace(/\/+$/, '');
+    this.timeout = config.timeout || 30000;
+    this.retries = config.retries || 2;
 
-    // Create axios instance
-    this.client = axios.create({
-      baseURL: this.config.baseURL,
-      timeout: this.config.timeout,
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
-    });
-
-    // Add authentication if provided
-    if (this.config.username && this.config.password) {
-      const auth = Buffer.from(
-        `${this.config.username}:${this.config.password}`
-      ).toString('base64');
-      this.client.defaults.headers.common['Authorization'] = `Basic ${auth}`;
-    }
-
-    // Configure retry logic
-    axiosRetry(this.client, {
-      retries: this.config.retries,
-      retryDelay: axiosRetry.exponentialDelay,
-      retryCondition: (error: AxiosError) => {
-        // Retry on network errors and specific HTTP errors
-        if (axiosRetry.isNetworkOrIdempotentRequestError(error)) {
-          return true;
-        }
-        
-        // Retry on specific status codes
-        const retryableStatuses = [408, 429, 500, 502, 503, 504];
-        return error.response 
-          ? retryableStatuses.includes(error.response.status)
-          : false;
-      },
-      onRetry: (retryCount, error) => {
-        console.warn(`Retry attempt ${retryCount} for ${error.config?.url}`);
-      },
-    });
-
-    // Add response interceptor for error handling
-    this.client.interceptors.response.use(
-      (response) => response,
-      (error: AxiosError) => {
-        throw this.handleError(error);
-      }
-    );
-  }
-
-  /**
-   * Normalize URL by adding protocol and removing trailing slashes
-   */
-  private normalizeURL(url: string): string {
-    // Remove common prefixes that might be mistakenly included
-    let normalized = url
-      .replace(/^(https?:\/\/)?(www\.)?/, '')
-      .replace(/\/$/, '');
-
-    // Add https:// if no protocol specified
-    if (!normalized.startsWith('http://') && !normalized.startsWith('https://')) {
-      normalized = `https://${normalized}`;
-    }
-
-    return normalized;
-  }
-
-  /**
-   * Handle and transform errors into CDSError
-   */
-  private handleError(error: AxiosError): CDSError {
-    if (error.response) {
-      // Server responded with error status
-      const status = error.response.status;
-      const data = error.response.data as any;
-      
-      let message = data?.error || data?.message || error.message;
-      
-      // User-friendly messages for common errors
-      switch (status) {
-        case 400:
-          message = `Invalid request: ${message}`;
-          break;
-        case 401:
-          message = 'Authentication failed. Check your credentials.';
-          break;
-        case 403:
-          message = 'Access forbidden. You do not have permission.';
-          break;
-        case 404:
-          message = 'Resource not found. Check the endpoint URL.';
-          break;
-        case 429:
-          message = 'Rate limit exceeded. Please try again later.';
-          break;
-        case 500:
-        case 502:
-        case 503:
-        case 504:
-          message = 'Server error. Please try again later.';
-          break;
-      }
-
-      return new CDSError(message, status, data);
-    } else if (error.request) {
-      // Request made but no response
-      return new CDSError(
-        'No response from server. Check your network connection.',
-        undefined,
-        error.request
-      );
+    if (config.username && config.password) {
+      this.authHeader = 'Basic ' + btoa(config.username + ':' + config.password);
     } else {
-      // Error in request setup
-      return new CDSError(error.message);
+      this.authHeader = null;
     }
   }
 
-  /**
-   * Get city suggestions based on partial name
-   */
+  /** Set the language code sent via Accept-Language header */
+  setLanguage(code: string): void {
+    this.language = code;
+  }
+
+  /** Get the currently configured language */
+  getLanguage(): string | null {
+    return this.language;
+  }
+
+  private buildHeaders(extra?: Record<string, string>): Record<string, string> {
+    const h: Record<string, string> = { Accept: 'application/json' };
+    if (this.authHeader) h['Authorization'] = this.authHeader;
+    if (this.language) h['Accept-Language'] = this.language;
+    if (extra) Object.assign(h, extra);
+    return h;
+  }
+
+  private async request(url: string, opts?: RequestInit): Promise<Response> {
+    let lastError: any;
+
+    for (let attempt = 0; attempt <= this.retries; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), this.timeout);
+
+        const res = await fetch(url, { ...opts, signal: controller.signal });
+        clearTimeout(timer);
+
+        if (res.ok) return res;
+
+        let serverMsg = '';
+        try {
+          const body = await res.clone().json();
+          serverMsg = body.error || body.message || '';
+        } catch {
+          serverMsg = await res.text().catch(() => '');
+        }
+
+        const err = new CDSError(
+          res.status >= 400 && res.status < 500
+            ? `Request error (${res.status})${serverMsg ? ': ' + serverMsg : ''}`
+            : `Server error (${res.status}). Please try again later.`,
+          res.status,
+          serverMsg
+        );
+
+        // Don't retry 4xx
+        if (res.status >= 400 && res.status < 500) throw err;
+        lastError = err;
+      } catch (e: any) {
+        if (e instanceof CDSError) throw e;
+        lastError = new CDSError(
+          'Could not reach the server. Check your network connection.',
+          undefined,
+          e.message
+        );
+      }
+    }
+    throw lastError;
+  }
+
+  /** Fetch supported languages from the backend */
+  async getLanguages(): Promise<Language[]> {
+    const res = await this.request(`${this.baseURL}/languages`, {
+      headers: this.buildHeaders(),
+    });
+    const body = await res.json();
+    return Array.isArray(body) ? body : (body.data || []);
+  }
+
+  /** Get city suggestions for a partial query (min 2 chars) */
   async getSuggestions(query: string): Promise<CitySuggestion[]> {
-    if (!query || query.length < 2) {
-      throw new CDSError('Query must be at least 2 characters long');
-    }
-
-    const response = await this.client.get('/suggestions', {
-      params: { q: query },
-    });
-
-    // Handle both response formats
-    return response.data.data || response.data;
+    if (!query || query.length < 2) return [];
+    const res = await this.request(
+      `${this.baseURL}/suggestions?q=${encodeURIComponent(query)}`,
+      { headers: this.buildHeaders() }
+    );
+    const body = await res.json();
+    return Array.isArray(body) ? body : (body.data || []);
   }
 
-  /**
-   * Calculate distance between two cities
-   */
+  /** Calculate distance between two cities by their IDs */
   async calculateDistance(city1Id: string, city2Id: string): Promise<number> {
-    if (!city1Id || !city2Id) {
-      throw new CDSError('Both city IDs are required');
-    }
-
-    const response = await this.client.post('/distance', {
-      City1: city1Id,
-      City2: city2Id,
+    if (!city1Id || !city2Id) throw new CDSError('Both city IDs are required', 400);
+    const res = await this.request(`${this.baseURL}/distance`, {
+      method: 'POST',
+      headers: this.buildHeaders({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ City1: city1Id, City2: city2Id }),
     });
-
-    // Handle different response formats
-    const data = response.data;
-    return data.distanceKm || data.data || data;
+    const data = await res.json();
+    return data.Distance ?? data.distanceKm ?? data.distance ?? data;
   }
 
-  /**
-   * Health check
-   */
+  /** Health check */
   async healthCheck(): Promise<boolean> {
     try {
-      await this.client.get('/health_check');
+      await this.request(`${this.baseURL}/health_check`, { headers: this.buildHeaders() });
       return true;
-    } catch (error) {
+    } catch {
       return false;
     }
   }
-
-  /**
-   * Get API version
-   */
-  async getVersion(): Promise<string> {
-    const response = await this.client.get('/version');
-    return response.data;
-  }
 }
 
-// Export everything
 export default CDSClient;
-
-// Export utility classes
 export { FlagUtils, FormatUtils } from './utils';
