@@ -1,212 +1,313 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('City Distance Website', () => {
+
   test.beforeEach(async ({ page }) => {
-    // Navigate to the website
     await page.goto('/');
-    
-    // Wait for the page to be fully loaded
-    await expect(page.locator('h1')).toContainText('City Distance');
+    // Page should render immediately - no CDN dependency
+    await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
   });
 
-  test('page loads successfully', async ({ page }) => {
-    // Verify page title
-    await expect(page).toHaveTitle('City Distance Application');
-    
-    // Verify main elements are present
+  // ── Page structure tests ──────────────────────────────────────────────────
+
+  test('page loads with correct title and structure', async ({ page }) => {
+    await expect(page).toHaveTitle('City Distance Calculator');
+    await expect(page.locator('h1')).toContainText('City Distance Calculator');
     await expect(page.locator('#city1')).toBeVisible();
     await expect(page.locator('#city2')).toBeVisible();
+    await expect(page.locator('#searchBtn')).toBeVisible();
     await expect(page.locator('#searchBtn')).toContainText('Calculate Distance');
   });
 
-  test('language selector is visible and clickable', async ({ page }) => {
+  test('search box contains From and To labels', async ({ page }) => {
+    const labels = page.locator('.search-box label');
+    await expect(labels.nth(0)).toContainText('From');
+    await expect(labels.nth(1)).toContainText('To');
+  });
+
+  test('inputs have correct placeholders', async ({ page }) => {
+    await expect(page.locator('#city1')).toHaveAttribute('placeholder', 'Search for a city...');
+    await expect(page.locator('#city2')).toHaveAttribute('placeholder', 'Search for a city...');
+  });
+
+  // ── Calculate button state ────────────────────────────────────────────────
+
+  test('calculate button is disabled initially', async ({ page }) => {
+    await expect(page.locator('#searchBtn')).toBeDisabled();
+  });
+
+  test('clicking disabled calculate button does nothing', async ({ page }) => {
+    await page.locator('#searchBtn').click({ force: true });
+    await expect(page.locator('#msgValidation')).not.toHaveClass(/show/);
+  });
+
+  // ── Dark/Light mode ───────────────────────────────────────────────────────
+
+  test('theme toggle button exists and is clickable', async ({ page }) => {
+    const themeBtn = page.locator('#themeBtn');
+    await expect(themeBtn).toBeVisible();
+    await expect(themeBtn).toBeEnabled();
+  });
+
+  test('clicking theme toggle switches between light and dark', async ({ page }) => {
+    const html = page.locator('html');
+    const themeBtn = page.locator('#themeBtn');
+
+    const initialTheme = await html.getAttribute('data-theme');
+
+    await themeBtn.click();
+    const newTheme = await html.getAttribute('data-theme');
+    expect(newTheme).not.toBe(initialTheme);
+
+    // Click again to toggle back
+    await themeBtn.click();
+    await expect(html).toHaveAttribute('data-theme', initialTheme!);
+  });
+
+  test('theme preference persists after reload', async ({ page }) => {
+    const themeBtn = page.locator('#themeBtn');
+
+    // Set to dark mode
+    const initialTheme = await page.locator('html').getAttribute('data-theme');
+    if (initialTheme === 'light') {
+      await themeBtn.click();
+    }
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+
+    // Reload and check
+    await page.reload();
+    await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
+  });
+
+  // ── Language selector ─────────────────────────────────────────────────────
+
+  test('language button exists', async ({ page }) => {
+    await expect(page.locator('#langBtn')).toBeVisible();
+  });
+
+  test('language dropdown opens and closes', async ({ page }) => {
     const langBtn = page.locator('#langBtn');
-    
-    // Initially the button might be disabled while loading
-    await expect(langBtn).toBeVisible();
-    
-    // Wait for languages to load
+    const dropdown = page.locator('#langDropdown');
+
     await page.waitForTimeout(2000);
-    
-    // Try to click the language button
+
     if (await langBtn.isEnabled()) {
       await langBtn.click();
-      
-      // Verify dropdown opens
-      await expect(page.locator('#langDropdown')).toHaveClass(/open/);
-      
+      await expect(dropdown).toHaveClass(/open/);
+
       // Close by clicking outside
-      await page.locator('body').click({ position: { x: 0, y: 0 } });
-      
-      // Verify dropdown closes
-      await expect(page.locator('#langDropdown')).not.toHaveClass(/open/);
+      await page.locator('h1').click();
+      await expect(dropdown).not.toHaveClass(/open/);
     }
   });
 
-  test('city autocomplete works', async ({ page }) => {
-    const city1Input = page.locator('#city1');
-    const suggestions = page.locator('#suggestions1');
-    
-    // Type in the first city field
-    await city1Input.fill('London');
-    
-    // Wait for suggestions to appear
-    await page.waitForTimeout(1000);
-    
-    // Check if suggestions are visible
-    const suggestionsVisible = await suggestions.isVisible().catch(() => false);
-    
-    if (suggestionsVisible) {
-      // Click on the first suggestion if available
-      const firstSuggestion = suggestions.locator('.suggestion-item').first();
-      if (await firstSuggestion.isVisible().catch(() => false)) {
-        await firstSuggestion.click();
-        
-        // Verify selection is shown
-        await expect(page.locator('#selected1')).toBeVisible();
+  test('selecting a language updates button and saves cookie', async ({ page }) => {
+    const langBtn = page.locator('#langBtn');
+
+    await page.waitForTimeout(2000);
+
+    if (await langBtn.isEnabled()) {
+      await langBtn.click();
+      const options = page.locator('.lang-option');
+      const count = await options.count();
+
+      if (count > 1) {
+        const secondOption = options.nth(1);
+        const langName = await secondOption.locator('span:last-child').textContent();
+        await secondOption.click();
+
+        await expect(page.locator('#langBtnLabel')).toContainText(langName!.trim());
+
+        // Verify cookie was set
+        const cookies = await page.context().cookies();
+        const langCookie = cookies.find(c => c.name === 'cds_lang');
+        expect(langCookie).toBeTruthy();
       }
     }
   });
 
-  test('keyboard navigation in autocomplete', async ({ page }) => {
-    const city1Input = page.locator('#city1');
-    const suggestions = page.locator('#suggestions1');
-    
-    // Type to trigger suggestions
-    await city1Input.fill('Paris');
+  // ── Autocomplete / Suggestions ────────────────────────────────────────────
+
+  test('typing in city1 triggers suggestions', async ({ page }) => {
+    await page.locator('#city1').fill('Lon');
     await page.waitForTimeout(1000);
-    
-    // Check if suggestions appeared
-    const suggestionsVisible = await suggestions.isVisible().catch(() => false);
-    
-    if (suggestionsVisible) {
-      // Press down arrow to navigate
-      await city1Input.press('ArrowDown');
-      await page.waitForTimeout(200);
-      
-      // Check if an item is highlighted
-      const highlightedItem = suggestions.locator('.kbd-selected');
-      const isHighlighted = await highlightedItem.count() > 0;
-      
-      expect(isHighlighted || true).toBe(true); // Soft assertion - test passes even if no highlight
+
+    const visible = await page.locator('#suggestions1').isVisible().catch(() => false);
+    if (visible) {
+      expect(await page.locator('#suggestions1 .suggestion-item').count()).toBeGreaterThan(0);
     }
   });
 
-  test('calculate distance button exists', async ({ page }) => {
-    const calcBtn = page.locator('#searchBtn');
-    
-    await expect(calcBtn).toBeVisible();
-    await expect(calcBtn).toBeEnabled();
+  test('selecting a suggestion shows selected chip and updates input', async ({ page }) => {
+    const input = page.locator('#city1');
+    const suggestions = page.locator('#suggestions1');
+
+    await input.fill('London');
+    await page.waitForTimeout(1000);
+
+    if (!(await suggestions.isVisible().catch(() => false))) {
+      test.skip(true, 'Backend not available');
+      return;
+    }
+
+    await suggestions.locator('.suggestion-item').first().click();
+
+    const inputValue = await input.inputValue();
+    expect(inputValue.length).toBeGreaterThan(0);
+    await expect(page.locator('#selected1')).toHaveClass(/show/);
   });
 
-  test('shows validation error when cities not selected', async ({ page }) => {
-    // Click calculate without selecting cities
-    await page.locator('#searchBtn').click();
-    
-    // Wait a moment for validation message
+  test('clearing input resets selection and disables button', async ({ page }) => {
+    const input = page.locator('#city1');
+    const suggestions = page.locator('#suggestions1');
+
+    await input.fill('London');
+    await page.waitForTimeout(1000);
+
+    if (!(await suggestions.isVisible().catch(() => false))) {
+      test.skip(true, 'Backend not available');
+      return;
+    }
+
+    await suggestions.locator('.suggestion-item').first().click();
+    await expect(page.locator('#selected1')).toHaveClass(/show/);
+
+    await input.fill('');
+    await expect(page.locator('#selected1')).not.toHaveClass(/show/);
+    await expect(page.locator('#searchBtn')).toBeDisabled();
+  });
+
+  test('keyboard navigation in suggestions: ArrowDown, ArrowUp, Enter', async ({ page }) => {
+    const input = page.locator('#city1');
+    const suggestions = page.locator('#suggestions1');
+
+    await input.fill('New');
+    await page.waitForTimeout(1000);
+
+    if (!(await suggestions.isVisible().catch(() => false))) {
+      test.skip(true, 'Backend not available');
+      return;
+    }
+
+    await input.press('ArrowDown');
+    await page.waitForTimeout(100);
+    expect(await suggestions.locator('.kbd-selected').count()).toBe(1);
+
+    await input.press('Enter');
+    await page.waitForTimeout(200);
+    await expect(page.locator('#selected1')).toHaveClass(/show/);
+  });
+
+  test('Escape closes suggestions', async ({ page }) => {
+    const input = page.locator('#city1');
+    const suggestions = page.locator('#suggestions1');
+
+    await input.fill('Berlin');
+    await page.waitForTimeout(1000);
+
+    if (!(await suggestions.isVisible().catch(() => false))) {
+      test.skip(true, 'Backend not available');
+      return;
+    }
+
+    await input.press('Escape');
+    await expect(suggestions).not.toHaveClass(/active/);
+  });
+
+  test('single character does not trigger suggestions', async ({ page }) => {
+    await page.locator('#city1').fill('L');
     await page.waitForTimeout(500);
-    
-    // Check if validation message appears
-    const validationMsg = page.locator('#msgValidation');
-    const isVisible = await validationMsg.isVisible().catch(() => false);
-    
-    if (isVisible) {
-      const text = await validationMsg.textContent();
-      expect(text).toContain('Please select');
-    }
+    await expect(page.locator('#suggestions1')).not.toHaveClass(/active/);
   });
 
-  test('complete flow - select two cities and calculate distance', async ({ page }) => {
-    // This test requires a running backend with test data
-    // Skip if no backend available (detected by suggestions not loading)
-    
-    const city1Input = page.locator('#city1');
-    const city2Input = page.locator('#city2');
+  test('clicking outside closes suggestions', async ({ page }) => {
+    const suggestions = page.locator('#suggestions1');
+
+    await page.locator('#city1').fill('Madrid');
+    await page.waitForTimeout(1000);
+
+    if (!(await suggestions.isVisible().catch(() => false))) {
+      test.skip(true, 'Backend not available');
+      return;
+    }
+
+    await page.locator('h1').click();
+    await expect(suggestions).not.toHaveClass(/active/);
+  });
+
+  // ── Calculate button enables/disables ─────────────────────────────────────
+
+  test('button enables only when both cities are selected', async ({ page }) => {
+    const calcBtn = page.locator('#searchBtn');
     const suggestions1 = page.locator('#suggestions1');
     const suggestions2 = page.locator('#suggestions2');
-    
-    // Try to select first city
-    await city1Input.fill('New York');
-    await page.waitForTimeout(1500);
-    
-    const suggestions1Visible = await suggestions1.isVisible().catch(() => false);
-    
-    if (!suggestions1Visible) {
-      test.skip(true, 'Backend not available - skipping complete flow test');
+
+    await page.locator('#city1').fill('London');
+    await page.waitForTimeout(1000);
+    if (!(await suggestions1.isVisible().catch(() => false))) {
+      test.skip(true, 'Backend not available');
       return;
     }
-    
-    // Select first suggestion for city 1
-    const firstSuggestion1 = suggestions1.locator('.suggestion-item').first();
-    await firstSuggestion1.click();
-    await expect(page.locator('#selected1')).toBeVisible();
-    
-    // Select second city
-    await city2Input.fill('London');
+    await suggestions1.locator('.suggestion-item').first().click();
+    await expect(calcBtn).toBeDisabled(); // Only one city
+
+    await page.locator('#city2').fill('Paris');
+    await page.waitForTimeout(1000);
+    await suggestions2.locator('.suggestion-item').first().click();
+    await expect(calcBtn).toBeEnabled(); // Both selected
+  });
+
+  // ── Full flow ─────────────────────────────────────────────────────────────
+
+  test('complete flow: select cities, calculate distance, see result', async ({ page }) => {
+    const suggestions1 = page.locator('#suggestions1');
+    const suggestions2 = page.locator('#suggestions2');
+
+    await page.locator('#city1').fill('New York');
     await page.waitForTimeout(1500);
-    
-    const suggestions2Visible = await suggestions2.isVisible().catch(() => false);
-    expect(suggestions2Visible).toBe(true);
-    
-    // Select first suggestion for city 2
-    const firstSuggestion2 = suggestions2.locator('.suggestion-item').first();
-    await firstSuggestion2.click();
-    await expect(page.locator('#selected2')).toBeVisible();
-    
-    // Calculate distance
+    if (!(await suggestions1.isVisible().catch(() => false))) {
+      test.skip(true, 'Backend not available');
+      return;
+    }
+    await suggestions1.locator('.suggestion-item').first().click();
+
+    await page.locator('#city2').fill('London');
+    await page.waitForTimeout(1500);
+    await suggestions2.locator('.suggestion-item').first().click();
+
     await page.locator('#searchBtn').click();
-    
-    // Wait for result
-    await page.waitForTimeout(2000);
-    
-    // Check if result is displayed
-    const result = page.locator('#result');
-    const resultVisible = await result.isVisible().catch(() => false);
-    
+    await page.waitForTimeout(3000);
+
+    const resultVisible = await page.locator('#result').isVisible().catch(() => false);
+
     if (resultVisible) {
-      const resultText = await result.textContent();
-      expect(resultText).toContain('km');
+      const distanceText = await page.locator('#resultDistance').textContent();
+      expect(distanceText).toContain('km');
     } else {
-      // Check if there was a server error
-      const serverError = page.locator('#msgServer');
-      const hasError = await serverError.isVisible().catch(() => false);
-      
+      // Server error is acceptable if backend doesn't have the data
+      const hasError = await page.locator('#msgServer').isVisible().catch(() => false);
       if (hasError) {
-        console.log('Server error occurred during distance calculation');
+        console.log('Server error during calculation - expected if test data missing');
       }
     }
   });
 
-  test('loading indicator appears during calculation', async ({ page }) => {
-    // This test requires backend to be running
-    const city1Input = page.locator('#city1');
-    const suggestions1 = page.locator('#suggestions1');
-    
-    // Try to select first city
-    await city1Input.fill('Tokyo');
-    await page.waitForTimeout(1500);
-    
-    const suggestions1Visible = await suggestions1.isVisible().catch(() => false);
-    
-    if (!suggestions1Visible) {
-      test.skip(true, 'Backend not available - skipping loading indicator test');
+  // ── Suggestion details ────────────────────────────────────────────────────
+
+  test('suggestions show metadata badges', async ({ page }) => {
+    const suggestions = page.locator('#suggestions1');
+
+    await page.locator('#city1').fill('Tokyo');
+    await page.waitForTimeout(1000);
+
+    if (!(await suggestions.isVisible().catch(() => false))) {
+      test.skip(true, 'Backend not available');
       return;
     }
-    
-    // Select a city
-    await suggestions1.locator('.suggestion-item').first().click();
-    await page.locator('#city2').fill('Osaka');
-    await page.waitForTimeout(1500);
-    await page.locator('#suggestions2 .suggestion-item').first().click();
-    
-    // Click calculate and check loading indicator
-    await page.locator('#searchBtn').click();
-    
-    // Loading should appear briefly
-    const loading = page.locator('#loading');
-    const loadingVisible = await loading.isVisible().catch(() => false);
-    
-    // The loading indicator should appear (even if briefly)
-    expect(loadingVisible || true).toBe(true);
+
+    const firstItem = suggestions.locator('.suggestion-item').first();
+    await expect(firstItem.locator('.city-name')).toBeVisible();
+    expect(await firstItem.locator('.badge').count()).toBeGreaterThan(0);
   });
 });
