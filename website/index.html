@@ -140,6 +140,12 @@
         }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover, .suggestion-item.kbd-selected { background: var(--bg-suggestion-hover); }
+        .suggestion-item.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--bg);
+        }
+        .suggestion-item.disabled:hover { background: var(--bg); }
         .city-name { font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; font-size: 14px; margin-bottom: 2px; }
         .city-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 4px; flex-wrap: wrap; }
         .badge { background: var(--badge-bg); color: var(--badge-text); padding: 1px 6px; border-radius: 3px; font-size: 11px; }
@@ -262,7 +268,22 @@
 
     // ── State ─────────────────────────────────────────────────────────────────
     var sel={city1:null,city2:null}, timers={};
-    function updateBtn(){document.getElementById('searchBtn').disabled=!(sel.city1&&sel.city2);}
+    function updateBtn(){
+        var c1=sel.city1,c2=sel.city2;
+        var btn=document.getElementById('searchBtn');
+        // Button enabled only if both cities selected AND they're different
+        btn.disabled=!(c1&&c2&&c1.id!==c2.id);
+    }
+    function canCalculate(){
+        var c1=sel.city1,c2=sel.city2;
+        if(!c1||!c2){
+            return {ok:false,msg:'Please select both cities from the suggestions.'};
+        }
+        if(c1.id===c2.id){
+            return {ok:false,msg:'Cannot calculate distance between the same city. Please select two different cities.'};
+        }
+        return {ok:true};
+    }
 
     // ── Messages ──────────────────────────────────────────────────────────────
     function clr(){['msgValidation','msgServer','result'].forEach(function(id){document.getElementById(id).classList.remove('show');});}
@@ -273,8 +294,10 @@
     function closeLang(){document.getElementById('langDropdown').classList.remove('open');}
     function chooseLang(l){
         client.setLanguage(l.code);
-        document.getElementById('langBtnFlag').textContent=toFlag(l.flag||l.countryCode||'');
-        document.getElementById('langBtnLabel').textContent=l.name||l.code;
+        var flag = toFlag(l.flag || l.countryCode || l.code.slice(0,2) || '');
+        var name = l.name || l.country || l.code;
+        document.getElementById('langBtnFlag').textContent = flag;
+        document.getElementById('langBtnLabel').textContent = name;
         document.querySelectorAll('.lang-option').forEach(function(o){o.classList.toggle('active',o.dataset.code===l.code);});
         setCookie('cds_lang',l.code,365); closeLang();
     }
@@ -288,7 +311,9 @@
         dd.innerHTML='';
         langs.forEach(function(l){
             var o=document.createElement('div');o.className='lang-option';o.dataset.code=l.code;
-            o.innerHTML='<span class="lang-flag">'+toFlag(l.flag||l.countryCode||'')+'</span><span>'+(l.name||l.code)+'</span>';
+            var flag = toFlag(l.flag || l.countryCode || l.code.slice(0,2) || '');
+            var name = l.name || l.country || l.code;
+            o.innerHTML='<span class="lang-flag">'+flag+'</span><span>'+name+'</span>';
             o.addEventListener('click',function(){chooseLang(l);});
             dd.appendChild(o);
         });
@@ -326,14 +351,26 @@
     }
     function renderSug(cities,sug,inp,chip,key){
         sug.innerHTML='';if(!cities||!cities.length){sug.classList.remove('active');return;}
+        var otherKey=key==='city1'?'city2':'city1';
+        var otherCity=sel[otherKey];
         cities.forEach(function(c){
             var el=document.createElement('div');el.className='suggestion-item';
+            var isAlreadySelected=otherCity&&otherCity.id===c.id;
+            if(isAlreadySelected){
+                el.classList.add('disabled');
+                el.style.cursor='not-allowed';
+            }
             var f=toFlag(c.flag||c.countryCode||''),badges='';
             if(c.country)badges+='<span class="badge">'+c.country+'</span>';
             if(c.adminRegion)badges+='<span class="badge">'+c.adminRegion+'</span>';
             if(c.population)badges+='<span class="badge">'+fmtPop(c.population)+'</span>';
             el.innerHTML='<div class="city-name">'+(f?'<span class="flag">'+f+'</span>':'')+'<span>'+c.name+'</span></div>'+(badges?'<div class="city-meta">'+badges+'</div>':'');
             el.addEventListener('click',function(){
+                if(isAlreadySelected){
+                    warn('This city is already selected as the '+ (key==='city1'?'destination':'origin') +'. Please select a different city.');
+                    sug.classList.remove('active');
+                    return;
+                }
                 sel[key]=c;inp.value=c.name;sug.classList.remove('active');
                 chip.innerHTML='<span class="flag">'+toFlag(c.flag||c.countryCode||'')+'</span><strong>'+c.name+'</strong>'+(c.country?', '+c.country:'')+(c.adminRegion?' ('+c.adminRegion+')':'');
                 chip.classList.add('show');updateBtn();
@@ -348,7 +385,13 @@
     // ── Calculate ─────────────────────────────────────────────────────────────
     document.getElementById('searchBtn').addEventListener('click',function(){
         var c1=sel.city1,c2=sel.city2; clr();
-        if(!c1||!c2){warn('Please select both cities from the suggestions.');return;}
+        
+        var validation=canCalculate();
+        if(!validation.ok){
+            warn(validation.msg);
+            return;
+        }
+        
         var btn=this,ld=document.getElementById('loading');ld.classList.add('show');btn.disabled=true;
         client.calculateDistance(c1.id,c2.id).then(function(d){
             document.getElementById('resultCities').innerHTML=
