@@ -17,7 +17,6 @@
             --text-secondary: #555;
             --text-muted: #888;
             --border: #ddd;
-            --border-focus: #5a67d8;
             --accent: #5a67d8;
             --accent-hover: #4c51bf;
             --accent-light: rgba(90,103,216,0.1);
@@ -25,14 +24,9 @@
             --shadow-heavy: rgba(0,0,0,0.15);
             --badge-bg: #eef;
             --badge-text: #444;
-            --error-bg: #fff5f5;
-            --error-border: #fc8181;
-            --error-text: #c53030;
-            --warn-bg: #fffaf0;
-            --warn-border: #f6ad55;
-            --warn-text: #c05621;
+            --error-bg: #fff5f5; --error-border: #fc8181; --error-text: #c53030;
+            --warn-bg: #fffaf0;  --warn-border: #f6ad55;  --warn-text: #c05621;
         }
-
         [data-theme="dark"] {
             --bg: #0f0f1a;
             --bg-card: #1a1a2e;
@@ -45,7 +39,6 @@
             --text-secondary: #a0aec0;
             --text-muted: #718096;
             --border: #2d3748;
-            --border-focus: #7f8cf5;
             --accent: #7f8cf5;
             --accent-hover: #6b7cf5;
             --accent-light: rgba(127,140,245,0.15);
@@ -53,100 +46,55 @@
             --shadow-heavy: rgba(0,0,0,0.5);
             --badge-bg: #2d2d50;
             --badge-text: #a0aec0;
-            --error-bg: #2d1515;
-            --error-border: #c53030;
-            --error-text: #fc8181;
-            --warn-bg: #2d2515;
-            --warn-border: #c05621;
-            --warn-text: #f6ad55;
+            --error-bg: #2d1515; --error-border: #c53030; --error-text: #fc8181;
+            --warn-bg: #2d2515;  --warn-border: #c05621;  --warn-text: #f6ad55;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            background: var(--bg); color: var(--text);
             min-height: 100vh;
             display: flex; align-items: center; justify-content: center;
             padding: 20px;
-            transition: background 0.3s, color 0.3s;
+            transition: background .3s, color .3s;
         }
-
         .container {
-            background: var(--bg-card);
-            border-radius: 16px;
+            background: var(--bg-card); border-radius: 16px;
             box-shadow: 0 4px 24px var(--shadow);
-            padding: 32px;
-            max-width: 520px;
-            width: 100%;
-            transition: background 0.3s, box-shadow 0.3s;
+            padding: 32px; max-width: 520px; width: 100%;
+            transition: background .3s;
         }
 
-        /* ── Top bar: language + theme ─────────────────────────── */
-        .topbar {
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            gap: 8px;
-            margin-bottom: 24px;
-        }
+        /* Top bar */
+        .topbar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 24px; }
         .topbar-btn {
             display: flex; align-items: center; gap: 5px;
-            padding: 6px 10px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: var(--bg-input);
-            color: var(--text-secondary);
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
+            padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
+            background: var(--bg-input); color: var(--text-secondary);
+            font-size: 13px; cursor: pointer; transition: all .2s; position: relative;
         }
         .topbar-btn:hover { border-color: var(--accent); color: var(--accent); }
-        .topbar-btn:disabled { opacity: 0.4; cursor: not-allowed; }
-        .topbar-btn .chevron { font-size: 9px; opacity: 0.5; }
+        .topbar-btn:disabled { opacity: .4; cursor: not-allowed; }
+        .topbar-btn .chevron { font-size: 9px; opacity: .5; }
 
-        /* ── Title ─────────────────────────────────────────────── */
-        .title {
-            text-align: center;
-            margin-bottom: 28px;
-        }
-        .title h1 {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--text);
-        }
-        .title p {
-            font-size: 13px;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
+        /* Title */
+        .title { text-align: center; margin-bottom: 28px; }
+        .title h1 { font-size: 22px; font-weight: 700; color: var(--text); }
+        .title p  { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
 
-        /* ── Language dropdown ──────────────────────────────────── */
+        /* Language dropdown */
         .lang-dropdown {
-            display: none;
-            position: absolute;
-            top: calc(100% + 4px);
-            right: 0;
-            min-width: 160px;
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            box-shadow: 0 8px 24px var(--shadow-heavy);
-            z-index: 2000;
-            overflow: hidden;
-            max-height: 260px;
-            overflow-y: auto;
+            display: none; position: absolute; top: calc(100% + 4px); right: 0;
+            min-width: 160px; background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 8px; box-shadow: 0 8px 24px var(--shadow-heavy);
+            z-index: 2000; max-height: 260px; overflow-y: auto;
         }
         .lang-dropdown.open { display: block; }
         .lang-option {
             display: flex; align-items: center; gap: 8px;
-            padding: 8px 12px;
-            font-size: 13px;
-            color: var(--text);
-            cursor: pointer;
-            border-bottom: 1px solid var(--border);
-            transition: background 0.15s;
+            padding: 8px 12px; font-size: 13px; color: var(--text);
+            cursor: pointer; border-bottom: 1px solid var(--border); transition: background .15s;
         }
         .lang-option:last-child { border-bottom: none; }
         .lang-option:hover { background: var(--bg-suggestion-hover); }
@@ -154,168 +102,82 @@
         .lang-flag { font-size: 16px; line-height: 1; font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; }
         .lang-status { padding: 10px; font-size: 12px; color: var(--text-muted); text-align: center; }
 
-        /* ── Search box ────────────────────────────────────────── */
+        /* Search box */
         .search-box {
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 16px;
-            background: var(--bg-input);
-            transition: background 0.3s, border 0.3s;
+            border: 1px solid var(--border); border-radius: 12px;
+            padding: 20px; margin-bottom: 16px;
+            background: var(--bg-input); transition: background .3s, border .3s;
         }
         .input-group { position: relative; margin-bottom: 16px; }
         .input-group:last-child { margin-bottom: 0; }
         .input-group label {
-            display: block;
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-            margin-bottom: 6px;
+            display: block; font-size: 12px; font-weight: 600;
+            text-transform: uppercase; letter-spacing: .5px;
+            color: var(--text-muted); margin-bottom: 6px;
         }
         .input-group input {
-            width: 100%;
-            padding: 10px 14px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            font-size: 15px;
-            background: var(--bg-card);
-            color: var(--text);
-            transition: border 0.2s, box-shadow 0.2s;
+            width: 100%; padding: 10px 14px;
+            border: 1px solid var(--border); border-radius: 8px;
+            font-size: 15px; background: var(--bg-card); color: var(--text);
+            transition: border .2s, box-shadow .2s;
         }
-        .input-group input:focus {
-            outline: none;
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-light);
-        }
+        .input-group input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
         .input-group input::placeholder { color: var(--text-muted); }
-        .separator {
-            text-align: center;
-            color: var(--text-muted);
-            font-size: 18px;
-            margin: 12px 0;
-            user-select: none;
-        }
+        .separator { text-align: center; color: var(--text-muted); font-size: 18px; margin: 12px 0; user-select: none; }
 
-        /* ── Suggestions ───────────────────────────────────────── */
+        /* Suggestions */
         .suggestions {
-            position: absolute;
-            top: 100%;
-            left: 0; right: 0;
-            background: var(--bg-suggestion);
-            border: 1px solid var(--accent);
-            border-top: none;
-            border-radius: 0 0 8px 8px;
-            max-height: 240px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-            box-shadow: 0 4px 12px var(--shadow-heavy);
+            position: absolute; top: 100%; left: 0; right: 0;
+            background: var(--bg-suggestion); border: 1px solid var(--accent);
+            border-top: none; border-radius: 0 0 8px 8px;
+            max-height: 240px; overflow-y: auto; z-index: 1000;
+            display: none; box-shadow: 0 4px 12px var(--shadow-heavy);
         }
         .suggestions.active { display: block; }
         .suggestion-item {
-            padding: 10px 14px;
-            cursor: pointer;
-            border-bottom: 1px solid var(--border);
-            transition: background 0.15s;
+            padding: 10px 14px; cursor: pointer;
+            border-bottom: 1px solid var(--border); transition: background .15s;
         }
         .suggestion-item:last-child { border-bottom: none; }
         .suggestion-item:hover, .suggestion-item.kbd-selected { background: var(--bg-suggestion-hover); }
-        .city-name {
-            font-weight: 600;
-            color: var(--text);
-            display: flex; align-items: center; gap: 6px;
-            font-size: 14px;
-            margin-bottom: 2px;
-        }
-        .city-meta {
-            font-size: 12px;
-            color: var(--text-muted);
-            display: flex; gap: 4px; flex-wrap: wrap;
-        }
-        .badge {
-            background: var(--badge-bg);
-            color: var(--badge-text);
-            padding: 1px 6px;
-            border-radius: 3px;
-            font-size: 11px;
-        }
+        .city-name { font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; font-size: 14px; margin-bottom: 2px; }
+        .city-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 4px; flex-wrap: wrap; }
+        .badge { background: var(--badge-bg); color: var(--badge-text); padding: 1px 6px; border-radius: 3px; font-size: 11px; }
         .flag { font-size: 16px; line-height: 1; font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; }
 
-        /* ── Selected city chips ────────────────────────────────── */
-        .selected-city {
-            display: none;
-            margin-top: 6px;
-            padding: 6px 10px;
-            background: var(--bg-selected);
-            border-radius: 6px;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
+        /* Selected city chip */
+        .selected-city { display: none; margin-top: 6px; padding: 6px 10px; background: var(--bg-selected); border-radius: 6px; font-size: 12px; color: var(--text-secondary); }
         .selected-city.show { display: flex; align-items: center; gap: 6px; }
 
-        /* ── Calculate button ──────────────────────────────────── */
+        /* Calc button */
         .calc-btn {
-            width: 100%;
-            padding: 12px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
+            width: 100%; padding: 12px; background: var(--accent); color: #fff;
+            border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
+            cursor: pointer; transition: background .2s, transform .1s;
         }
         .calc-btn:hover:not(:disabled) { background: var(--accent-hover); transform: translateY(-1px); }
         .calc-btn:active:not(:disabled) { transform: translateY(0); }
-        .calc-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .calc-btn:disabled { opacity: .5; cursor: not-allowed; }
 
-        /* ── Result ────────────────────────────────────────────── */
-        .result {
-            margin-top: 16px;
-            padding: 20px;
-            background: var(--bg-result);
-            border-radius: 10px;
-            text-align: center;
-            display: none;
-        }
-        .result.show { display: block; animation: fadeIn 0.3s ease-out; }
-        .result-cities {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-        .result-distance {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--accent);
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        /* Result */
+        .result { margin-top: 16px; padding: 20px; background: var(--bg-result); border-radius: 10px; text-align: center; display: none; }
+        .result.show { display: block; animation: fadeIn .3s ease-out; }
+        .result-cities { font-size: 14px; color: var(--text-secondary); margin-bottom: 8px; }
+        .result-distance { font-size: 28px; font-weight: 700; color: var(--accent); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* ── Messages ──────────────────────────────────────────── */
-        .msg {
-            border-radius: 8px;
-            margin-top: 12px;
-            padding: 10px 14px;
-            font-size: 13px;
-            display: none;
-        }
+        /* Messages */
+        .msg { border-radius: 8px; margin-top: 12px; padding: 10px 14px; font-size: 13px; display: none; }
         .msg.show { display: block; }
-        .msg-warn { background: var(--warn-bg); border: 1px solid var(--warn-border); color: var(--warn-text); }
+        .msg-warn  { background: var(--warn-bg);  border: 1px solid var(--warn-border);  color: var(--warn-text); }
         .msg-error { background: var(--error-bg); border: 1px solid var(--error-border); color: var(--error-text); }
-        .msg-detail { margin-top: 4px; font-size: 11px; opacity: 0.7; font-family: monospace; }
+        .msg-detail { margin-top: 4px; font-size: 11px; opacity: .7; font-family: monospace; }
         .loading { display: none; text-align: center; color: var(--accent); margin-top: 12px; font-size: 13px; }
         .loading.show { display: block; }
     </style>
 </head>
 <body>
 <div class="container">
-    <!-- Top bar: language selector + dark mode toggle -->
     <div class="topbar">
         <button class="topbar-btn" id="langBtn" disabled aria-label="Select language">
             <span class="lang-flag" id="langBtnFlag"></span>
@@ -335,7 +197,6 @@
         <p>Find the distance between any two cities</p>
     </div>
 
-    <!-- Search box with two inputs -->
     <div class="search-box">
         <div class="input-group">
             <label for="city1">From</label>
@@ -366,298 +227,140 @@
     </div>
 </div>
 
+<!-- CDS Client from npm (IIFE build -> window.CDS) -->
+<script src="https://cdn.jsdelivr.net/npm/@xfilipnamefilip/cds-client@latest/dist/index.global.js"></script>
+
 <script>
-// ── Configuration ─────────────────────────────────────────────────────────────
-const API_BASE = 'https://cds2.moojtube.com:8443';
-const AUTH_USERNAME = 'User';
-const AUTH_PASSWORD = 'SecretPassword';
-const AUTH_HEADER = 'Basic ' + btoa(AUTH_USERNAME + ':' + AUTH_PASSWORD);
-
-// ── Cookie helpers ────────────────────────────────────────────────────────────
-function setCookie(name, value, days) {
-    const d = new Date();
-    d.setTime(d.getTime() + days * 86400000);
-    document.cookie = name + '=' + encodeURIComponent(value) + ';expires=' + d.toUTCString() + ';path=/;SameSite=Lax';
-}
-function getCookie(name) {
-    const v = document.cookie.match('(^|;)\\s*' + name + '=([^;]*)');
-    return v ? decodeURIComponent(v[2]) : null;
-}
-
-// ── Flag utilities (inline, no CDN dependency) ────────────────────────────────
-function toFlagEmoji(value) {
-    if (!value) return '';
-    if ([...value].some(c => c.codePointAt(0) > 0x7F)) return value;
-    if (/^[A-Za-z]{2}$/.test(value))
-        return [...value.toUpperCase()].map(c => String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)).join('');
-    return value;
-}
-function fmtPop(n) {
-    if (n == null) return '';
-    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(0) + 'K';
-    return String(n);
-}
-
-// ── Theme ─────────────────────────────────────────────────────────────────────
-function applyTheme(theme) {
-    document.documentElement.setAttribute('data-theme', theme);
-    document.getElementById('themeIcon').textContent = theme === 'dark' ? '\u2600' : '\u263E';
-    setCookie('cds_theme', theme, 365);
-}
-function initTheme() {
-    const saved = getCookie('cds_theme');
-    if (saved) { applyTheme(saved); return; }
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        applyTheme('dark');
-    }
-}
-document.getElementById('themeBtn').addEventListener('click', () => {
-    const current = document.documentElement.getAttribute('data-theme');
-    applyTheme(current === 'dark' ? 'light' : 'dark');
-});
-initTheme();
-
-// ── State ─────────────────────────────────────────────────────────────────────
-let currentLang = null;
-let allLanguages = [];
-const selectedCities = { city1: null, city2: null };
-const debounceTimers = {};
-
-// ── API helpers ───────────────────────────────────────────────────────────────
-function buildHeaders(extra) {
-    const h = { Authorization: AUTH_HEADER, Accept: 'application/json' };
-    if (currentLang && currentLang.code) h['Accept-Language'] = currentLang.code;
-    return Object.assign(h, extra || {});
-}
-
-async function apiFetch(url, opts) {
-    let res;
-    try { res = await fetch(url, opts || {}); }
-    catch (err) {
-        throw { clientSide: false, message: 'Could not reach the server.', detail: err.message };
-    }
-    if (res.ok) return res;
-    let serverMsg = '';
-    try { const b = await res.clone().json(); serverMsg = b.error || b.message || ''; } catch {}
-    const is4xx = res.status >= 400 && res.status < 500;
-    throw {
-        clientSide: is4xx,
-        message: is4xx
-            ? 'Request error (' + res.status + ')' + (serverMsg ? ': ' + serverMsg : '.')
-            : 'Server error (' + res.status + '). Please try again later.',
-        detail: serverMsg ? 'Server: ' + serverMsg : 'HTTP ' + res.status + ' ' + res.statusText,
-    };
-}
-
-// ── Messages ──────────────────────────────────────────────────────────────────
-function clearMessages() {
-    ['msgValidation', 'msgServer', 'result'].forEach(function (id) {
-        document.getElementById(id).classList.remove('show');
+(function () {
+    // ── Init client from npm package ──────────────────────────────────────────
+    var client = new CDS.CDSClient({
+        baseURL:  'https://cds2.moojtube.com:8443',
+        username: 'User',
+        password: 'SecretPassword'
     });
-}
-function showValidation(msg) {
-    var el = document.getElementById('msgValidation');
-    el.textContent = msg;
-    el.classList.add('show');
-}
-function showServerError(msg, detail) {
-    document.getElementById('msgServerText').textContent = msg;
-    document.getElementById('msgServerDetail').textContent = detail || '';
-    document.getElementById('msgServer').classList.add('show');
-}
+    var toFlag = CDS.FlagUtils.toFlagEmoji;
+    var fmtPop = CDS.FormatUtils.fmtPop;
 
-// ── Update calculate button state ─────────────────────────────────────────────
-function updateCalcBtn() {
-    document.getElementById('searchBtn').disabled = !(selectedCities.city1 && selectedCities.city2);
-}
+    // ── Cookies ───────────────────────────────────────────────────────────────
+    function setCookie(n,v,d){ var e=new Date();e.setTime(e.getTime()+d*864e5);document.cookie=n+'='+encodeURIComponent(v)+';expires='+e.toUTCString()+';path=/;SameSite=Lax'; }
+    function getCookie(n){ var m=document.cookie.match('(^|;)\\s*'+n+'=([^;]*)');return m?decodeURIComponent(m[2]):null; }
 
-// ── Language selector ─────────────────────────────────────────────────────────
-function getPreferredLang() {
-    // 1. Check cookie
-    var saved = getCookie('cds_lang');
-    if (saved) return saved;
-    // 2. Check browser language
-    var browserLang = (navigator.language || navigator.userLanguage || '').split('-')[0].toLowerCase();
-    return browserLang || 'en';
-}
+    // ── Theme ─────────────────────────────────────────────────────────────────
+    function applyTheme(t){
+        document.documentElement.setAttribute('data-theme',t);
+        document.getElementById('themeIcon').textContent = t==='dark'?'\u2600':'\u263E';
+        setCookie('cds_theme',t,365);
+    }
+    (function(){
+        var s=getCookie('cds_theme');
+        if(s){applyTheme(s);return;}
+        if(window.matchMedia&&window.matchMedia('(prefers-color-scheme:dark)').matches) applyTheme('dark');
+    })();
+    document.getElementById('themeBtn').addEventListener('click',function(){
+        applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');
+    });
 
-async function loadLanguages() {
-    var dd = document.getElementById('langDropdown');
-    var btn = document.getElementById('langBtn');
-    var status = document.getElementById('langStatus');
-    try {
-        var res = await apiFetch(API_BASE + '/languages', { headers: buildHeaders() });
-        var body = await res.json();
-        allLanguages = Array.isArray(body) ? body : (body.data || []);
-        if (!allLanguages.length) {
-            status.textContent = 'No languages available.';
-            btn.disabled = false;
-            return;
-        }
-        dd.innerHTML = '';
-        allLanguages.forEach(function (lang) {
-            var opt = document.createElement('div');
-            opt.className = 'lang-option';
-            opt.dataset.code = lang.code;
-            opt.innerHTML = '<span class="lang-flag">' + toFlagEmoji(lang.flag || lang.countryCode || '') + '</span><span>' + (lang.name || lang.code) + '</span>';
-            opt.addEventListener('click', function () { chooseLang(lang); });
-            dd.appendChild(opt);
+    // ── State ─────────────────────────────────────────────────────────────────
+    var sel={city1:null,city2:null}, timers={};
+    function updateBtn(){document.getElementById('searchBtn').disabled=!(sel.city1&&sel.city2);}
+
+    // ── Messages ──────────────────────────────────────────────────────────────
+    function clr(){['msgValidation','msgServer','result'].forEach(function(id){document.getElementById(id).classList.remove('show');});}
+    function warn(m){var e=document.getElementById('msgValidation');e.textContent=m;e.classList.add('show');}
+    function err(m,d){document.getElementById('msgServerText').textContent=m;document.getElementById('msgServerDetail').textContent=d||'';document.getElementById('msgServer').classList.add('show');}
+
+    // ── Language ──────────────────────────────────────────────────────────────
+    function closeLang(){document.getElementById('langDropdown').classList.remove('open');}
+    function chooseLang(l){
+        client.setLanguage(l.code);
+        document.getElementById('langBtnFlag').textContent=toFlag(l.flag||l.countryCode||'');
+        document.getElementById('langBtnLabel').textContent=l.name||l.code;
+        document.querySelectorAll('.lang-option').forEach(function(o){o.classList.toggle('active',o.dataset.code===l.code);});
+        setCookie('cds_lang',l.code,365); closeLang();
+    }
+    document.getElementById('langBtn').addEventListener('click',function(e){e.stopPropagation();document.getElementById('langDropdown').classList.toggle('open');});
+    document.addEventListener('click',closeLang);
+    document.getElementById('langDropdown').addEventListener('click',function(e){e.stopPropagation();});
+
+    client.getLanguages().then(function(langs){
+        var dd=document.getElementById('langDropdown');
+        if(!langs.length){document.getElementById('langStatus').textContent='No languages.';document.getElementById('langBtn').disabled=false;return;}
+        dd.innerHTML='';
+        langs.forEach(function(l){
+            var o=document.createElement('div');o.className='lang-option';o.dataset.code=l.code;
+            o.innerHTML='<span class="lang-flag">'+toFlag(l.flag||l.countryCode||'')+'</span><span>'+(l.name||l.code)+'</span>';
+            o.addEventListener('click',function(){chooseLang(l);});
+            dd.appendChild(o);
         });
-        // Pick the best default language
-        var preferred = getPreferredLang();
-        var match = allLanguages.find(function (l) { return l.code === preferred; });
-        chooseLang(match || allLanguages[0]);
-        btn.disabled = false;
-    } catch (err) {
-        status.textContent = 'Failed to load languages.';
-        status.style.color = 'var(--error-text)';
-        btn.disabled = false;
-        console.warn('Language load error:', err);
-    }
-}
-
-function chooseLang(lang) {
-    currentLang = lang;
-    document.getElementById('langBtnFlag').textContent = toFlagEmoji(lang.flag || lang.countryCode || '');
-    document.getElementById('langBtnLabel').textContent = lang.name || lang.code;
-    document.querySelectorAll('.lang-option').forEach(function (o) {
-        o.classList.toggle('active', o.dataset.code === lang.code);
-    });
-    setCookie('cds_lang', lang.code, 365);
-    closeLangDropdown();
-}
-
-function closeLangDropdown() {
-    document.getElementById('langDropdown').classList.remove('open');
-}
-
-document.getElementById('langBtn').addEventListener('click', function (e) {
-    e.stopPropagation();
-    document.getElementById('langDropdown').classList.toggle('open');
-});
-document.addEventListener('click', closeLangDropdown);
-document.getElementById('langDropdown').addEventListener('click', function (e) { e.stopPropagation(); });
-
-// ── Autocomplete ──────────────────────────────────────────────────────────────
-function setupAutocomplete(inputId, sugId, selId, key) {
-    var input = document.getElementById(inputId);
-    var sugg = document.getElementById(sugId);
-    var selDiv = document.getElementById(selId);
-    var kbFocus = -1;
-
-    input.addEventListener('input', function () {
-        var q = input.value.trim();
-        selectedCities[key] = null;
-        selDiv.classList.remove('show');
-        updateCalcBtn();
-        if (q.length < 2) { sugg.classList.remove('active'); return; }
-        clearTimeout(debounceTimers[key]);
-        debounceTimers[key] = setTimeout(async function () {
-            try {
-                var res = await apiFetch(API_BASE + '/suggestions?q=' + encodeURIComponent(q), { headers: buildHeaders() });
-                var body = await res.json();
-                var cities = Array.isArray(body) ? body : (body.data || []);
-                renderSuggestions(cities, sugg, input, selDiv, key);
-            } catch (err) {
-                sugg.classList.remove('active');
-                clearMessages();
-                err.clientSide ? showValidation(err.message) : showServerError(err.message, err.detail);
-            }
-        }, 250);
+        var pref=getCookie('cds_lang')||(navigator.language||'').split('-')[0].toLowerCase()||'en';
+        chooseLang(langs.find(function(l){return l.code===pref;})||langs[0]);
+        document.getElementById('langBtn').disabled=false;
+    }).catch(function(e){
+        document.getElementById('langStatus').textContent='Failed to load languages.';
+        document.getElementById('langBtn').disabled=false;
     });
 
-    input.addEventListener('keydown', function (e) {
-        var items = sugg.querySelectorAll('.suggestion-item');
-        if (!items.length) return;
-        if (e.key === 'ArrowDown') { e.preventDefault(); kbFocus = (kbFocus + 1) % items.length; }
-        else if (e.key === 'ArrowUp') { e.preventDefault(); kbFocus = (kbFocus - 1 + items.length) % items.length; }
-        else if (e.key === 'Enter' && kbFocus >= 0) { e.preventDefault(); items[kbFocus].click(); return; }
-        else if (e.key === 'Escape') { sugg.classList.remove('active'); kbFocus = -1; return; }
-        else return;
-        items.forEach(function (it, i) { it.classList.toggle('kbd-selected', i === kbFocus); });
-        if (items[kbFocus]) items[kbFocus].scrollIntoView({ block: 'nearest' });
-    });
-
-    document.addEventListener('click', function (e) {
-        if (!input.contains(e.target) && !sugg.contains(e.target)) {
-            sugg.classList.remove('active');
-            kbFocus = -1;
-        }
-    });
-}
-
-function renderSuggestions(cities, sugg, input, selDiv, key) {
-    sugg.innerHTML = '';
-    if (!cities || !cities.length) { sugg.classList.remove('active'); return; }
-    cities.forEach(function (city) {
-        var el = document.createElement('div');
-        el.className = 'suggestion-item';
-        var flag = toFlagEmoji(city.flag || city.countryCode || '');
-        var badges = '';
-        if (city.country) badges += '<span class="badge">' + city.country + '</span>';
-        if (city.adminRegion) badges += '<span class="badge">' + city.adminRegion + '</span>';
-        if (city.population) badges += '<span class="badge">' + fmtPop(city.population) + '</span>';
-        el.innerHTML =
-            '<div class="city-name">' + (flag ? '<span class="flag">' + flag + '</span>' : '') + '<span>' + city.name + '</span></div>' +
-            (badges ? '<div class="city-meta">' + badges + '</div>' : '');
-        el.addEventListener('click', function () {
-            selectedCities[key] = city;
-            input.value = city.name;
-            sugg.classList.remove('active');
-            selDiv.innerHTML = '<span class="flag">' + toFlagEmoji(city.flag || city.countryCode || '') + '</span><strong>' + city.name + '</strong>' +
-                (city.country ? ', ' + city.country : '') + (city.adminRegion ? ' (' + city.adminRegion + ')' : '');
-            selDiv.classList.add('show');
-            updateCalcBtn();
+    // ── Autocomplete ──────────────────────────────────────────────────────────
+    function setupAC(iid,sid,selid,key){
+        var inp=document.getElementById(iid),sug=document.getElementById(sid),chip=document.getElementById(selid),kb=-1;
+        inp.addEventListener('input',function(){
+            var q=inp.value.trim(); sel[key]=null; chip.classList.remove('show'); updateBtn();
+            if(q.length<2){sug.classList.remove('active');return;}
+            clearTimeout(timers[key]);
+            timers[key]=setTimeout(function(){
+                client.getSuggestions(q).then(function(cities){renderSug(cities,sug,inp,chip,key);})
+                .catch(function(e){sug.classList.remove('active');clr();e.clientSide?warn(e.message):err(e.message,e.response);});
+            },250);
         });
-        sugg.appendChild(el);
-    });
-    sugg.classList.add('active');
-}
-
-// ── Calculate distance ────────────────────────────────────────────────────────
-document.getElementById('searchBtn').addEventListener('click', async function () {
-    var c1 = selectedCities.city1;
-    var c2 = selectedCities.city2;
-    clearMessages();
-
-    if (!c1 || !c2) { showValidation('Please select both cities from the suggestions.'); return; }
-
-    var loading = document.getElementById('loading');
-    var resultEl = document.getElementById('result');
-    loading.classList.add('show');
-    this.disabled = true;
-
-    try {
-        var res = await apiFetch(API_BASE + '/distance', {
-            method: 'POST',
-            headers: buildHeaders({ 'Content-Type': 'application/json' }),
-            body: JSON.stringify({ City1: c1.id, City2: c2.id }),
+        inp.addEventListener('keydown',function(e){
+            var items=sug.querySelectorAll('.suggestion-item'); if(!items.length)return;
+            if(e.key==='ArrowDown'){e.preventDefault();kb=(kb+1)%items.length;}
+            else if(e.key==='ArrowUp'){e.preventDefault();kb=(kb-1+items.length)%items.length;}
+            else if(e.key==='Enter'&&kb>=0){e.preventDefault();items[kb].click();return;}
+            else if(e.key==='Escape'){sug.classList.remove('active');kb=-1;return;}
+            else return;
+            items.forEach(function(it,i){it.classList.toggle('kbd-selected',i===kb);});
+            if(items[kb])items[kb].scrollIntoView({block:'nearest'});
         });
-        var data = await res.json();
-        var distance = data.Distance || data.distanceKm || data.distance || data;
-
-        document.getElementById('resultCities').innerHTML =
-            '<span class="flag">' + toFlagEmoji(c1.flag || c1.countryCode || '') + '</span> ' +
-            '<strong>' + c1.name + '</strong>' + (c1.country ? ' (' + c1.country + ')' : '') +
-            ' &nbsp;&harr;&nbsp; ' +
-            '<span class="flag">' + toFlagEmoji(c2.flag || c2.countryCode || '') + '</span> ' +
-            '<strong>' + c2.name + '</strong>' + (c2.country ? ' (' + c2.country + ')' : '');
-        document.getElementById('resultDistance').textContent =
-            Number(distance).toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' km';
-        resultEl.classList.add('show');
-    } catch (err) {
-        err.clientSide ? showValidation(err.message) : showServerError(err.message, err.detail);
-    } finally {
-        loading.classList.remove('show');
-        updateCalcBtn();
+        document.addEventListener('click',function(e){if(!inp.contains(e.target)&&!sug.contains(e.target)){sug.classList.remove('active');kb=-1;}});
     }
-});
+    function renderSug(cities,sug,inp,chip,key){
+        sug.innerHTML='';if(!cities||!cities.length){sug.classList.remove('active');return;}
+        cities.forEach(function(c){
+            var el=document.createElement('div');el.className='suggestion-item';
+            var f=toFlag(c.flag||c.countryCode||''),badges='';
+            if(c.country)badges+='<span class="badge">'+c.country+'</span>';
+            if(c.adminRegion)badges+='<span class="badge">'+c.adminRegion+'</span>';
+            if(c.population)badges+='<span class="badge">'+fmtPop(c.population)+'</span>';
+            el.innerHTML='<div class="city-name">'+(f?'<span class="flag">'+f+'</span>':'')+'<span>'+c.name+'</span></div>'+(badges?'<div class="city-meta">'+badges+'</div>':'');
+            el.addEventListener('click',function(){
+                sel[key]=c;inp.value=c.name;sug.classList.remove('active');
+                chip.innerHTML='<span class="flag">'+toFlag(c.flag||c.countryCode||'')+'</span><strong>'+c.name+'</strong>'+(c.country?', '+c.country:'')+(c.adminRegion?' ('+c.adminRegion+')':'');
+                chip.classList.add('show');updateBtn();
+            });
+            sug.appendChild(el);
+        });
+        sug.classList.add('active');
+    }
+    setupAC('city1','suggestions1','selected1','city1');
+    setupAC('city2','suggestions2','selected2','city2');
 
-// ── Init ──────────────────────────────────────────────────────────────────────
-setupAutocomplete('city1', 'suggestions1', 'selected1', 'city1');
-setupAutocomplete('city2', 'suggestions2', 'selected2', 'city2');
-loadLanguages();
+    // ── Calculate ─────────────────────────────────────────────────────────────
+    document.getElementById('searchBtn').addEventListener('click',function(){
+        var c1=sel.city1,c2=sel.city2; clr();
+        if(!c1||!c2){warn('Please select both cities from the suggestions.');return;}
+        var btn=this,ld=document.getElementById('loading');ld.classList.add('show');btn.disabled=true;
+        client.calculateDistance(c1.id,c2.id).then(function(d){
+            document.getElementById('resultCities').innerHTML=
+                '<span class="flag">'+toFlag(c1.flag||c1.countryCode||'')+'</span> <strong>'+c1.name+'</strong>'+(c1.country?' ('+c1.country+')':'')
+                +' &harr; '
+                +'<span class="flag">'+toFlag(c2.flag||c2.countryCode||'')+'</span> <strong>'+c2.name+'</strong>'+(c2.country?' ('+c2.country+')':'');
+            document.getElementById('resultDistance').textContent=Number(d).toLocaleString(undefined,{maximumFractionDigits:2})+' km';
+            document.getElementById('result').classList.add('show');
+        }).catch(function(e){e.clientSide?warn(e.message):err(e.message,e.response);})
+        .finally(function(){ld.classList.remove('show');updateBtn();});
+    });
+})();
 </script>
 </body>
 </html>
