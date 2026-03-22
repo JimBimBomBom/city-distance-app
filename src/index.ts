@@ -150,7 +150,7 @@ export class CDSClient {
     const res = await this.request(`${this.baseURL}/distance`, {
       method: 'POST',
       headers: this.buildHeaders({ 'Content-Type': 'application/json' }),
-      body: JSON.stringify({ City1: city1Id, City2: city2Id }),
+      body: JSON.stringify({ City1Id: city1Id, City2Id: city2Id }),
     });
     const data = await res.json();
     return data.Distance ?? data.distanceKm ?? data.distance ?? data;
