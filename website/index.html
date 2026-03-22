@@ -68,6 +68,7 @@
 
         /* Top bar */
         .topbar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 24px; }
+        .lang-wrapper { position: relative; }
         .topbar-btn {
             display: flex; align-items: center; gap: 5px;
             padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px;
@@ -185,13 +186,15 @@
 <body>
 <div class="container">
     <div class="topbar">
-        <button class="topbar-btn" id="langBtn" aria-label="Select language">
-            <span class="lang-flag" id="langBtnFlag"></span>
-            <span id="langBtnLabel">Language</span>
-            <span class="chevron">&#9662;</span>
-        </button>
-        <div class="lang-dropdown" id="langDropdown">
-            <div class="lang-status" id="langStatus">Loading...</div>
+        <div class="lang-wrapper">
+            <button class="topbar-btn" id="langBtn" aria-label="Select language">
+                <span class="lang-flag" id="langBtnFlag"></span>
+                <span id="langBtnLabel">Language</span>
+                <span class="chevron">&#9662;</span>
+            </button>
+            <div class="lang-dropdown" id="langDropdown">
+                <div class="lang-status" id="langStatus">Loading...</div>
+            </div>
         </div>
         <button class="topbar-btn" id="themeBtn" aria-label="Toggle dark mode">
             <span id="themeIcon">&#9790;</span>
@@ -328,7 +331,13 @@
     
     document.getElementById('langBtn').addEventListener('click',function(e){
         e.stopPropagation();
-        document.getElementById('langDropdown').classList.toggle('open');
+        var dd=document.getElementById('langDropdown');
+        var isOpen=dd.classList.contains('open');
+        if(!isOpen){
+            // Opening - render content first
+            renderLangDropdown();
+        }
+        dd.classList.toggle('open');
     });
     document.addEventListener('click',closeLang);
     document.getElementById('langDropdown').addEventListener('click',function(e){e.stopPropagation();});
@@ -421,6 +430,8 @@
     document.getElementById('searchBtn').addEventListener('click',function(){
         var c1=sel.city1,c2=sel.city2; clr();
         
+        console.log('Calculate clicked with cities:', c1, c2);
+        
         var validation=canCalculate();
         if(!validation.ok){
             warn(validation.msg);
@@ -428,14 +439,20 @@
         }
         
         var btn=this,ld=document.getElementById('loading');ld.classList.add('show');btn.disabled=true;
+        console.log('Calling calculateDistance with IDs:', c1.id, c2.id);
+        
         client.calculateDistance(c1.id,c2.id).then(function(d){
+            console.log('Distance result:', d);
             document.getElementById('resultCities').innerHTML=
                 '<span class="flag">'+toFlag(c1.flag||c1.countryCode||'')+'</span> <strong>'+c1.name+'</strong>'+(c1.country?' ('+c1.country+')':'')
                 +' &harr; '
                 +'<span class="flag">'+toFlag(c2.flag||c2.countryCode||'')+'</span> <strong>'+c2.name+'</strong>'+(c2.country?' ('+c2.country+')':'');
             document.getElementById('resultDistance').textContent=Number(d).toLocaleString(undefined,{maximumFractionDigits:2})+' km';
             document.getElementById('result').classList.add('show');
-        }).catch(function(e){e.clientSide?warn(e.message):err(e.message,e.response);})
+        }).catch(function(e){
+            console.error('Calculate error:', e);
+            e.clientSide?warn(e.message):err(e.message,e.response);
+        })
         .finally(function(){ld.classList.remove('show');updateBtn();});
     });
 })();
