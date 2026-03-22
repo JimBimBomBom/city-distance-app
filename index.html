@@ -185,7 +185,7 @@
 <body>
 <div class="container">
     <div class="topbar">
-        <button class="topbar-btn" id="langBtn" disabled aria-label="Select language">
+        <button class="topbar-btn" id="langBtn" aria-label="Select language">
             <span class="lang-flag" id="langBtnFlag"></span>
             <span id="langBtnLabel">Language</span>
             <span class="chevron">&#9662;</span>
@@ -291,6 +291,10 @@
     function err(m,d){document.getElementById('msgServerText').textContent=m;document.getElementById('msgServerDetail').textContent=d||'';document.getElementById('msgServer').classList.add('show');}
 
     // ── Language ──────────────────────────────────────────────────────────────
+    var langsData = []; // Store languages data
+    var langsLoaded = false;
+    var langsError = null;
+    
     function closeLang(){document.getElementById('langDropdown').classList.remove('open');}
     function chooseLang(l){
         client.setLanguage(l.code);
@@ -301,28 +305,59 @@
         document.querySelectorAll('.lang-option').forEach(function(o){o.classList.toggle('active',o.dataset.code===l.code);});
         setCookie('cds_lang',l.code,365); closeLang();
     }
-    document.getElementById('langBtn').addEventListener('click',function(e){e.stopPropagation();document.getElementById('langDropdown').classList.toggle('open');});
+    function renderLangDropdown(){
+        var dd=document.getElementById('langDropdown');
+        if(langsError){
+            dd.innerHTML='<div class="lang-status" style="color:var(--error-text)">Failed to load languages</div>';
+        }else if(!langsLoaded){
+            dd.innerHTML='<div class="lang-status">Loading languages...</div>';
+        }else if(!langsData.length){
+            dd.innerHTML='<div class="lang-status">No languages available</div>';
+        }else{
+            dd.innerHTML='';
+            langsData.forEach(function(l){
+                var o=document.createElement('div');o.className='lang-option';o.dataset.code=l.code;
+                var flag = toFlag(l.flag || l.countryCode || l.code.slice(0,2) || '');
+                var name = l.name || l.country || l.code;
+                o.innerHTML='<span class="lang-flag">'+flag+'</span><span>'+name+'</span>';
+                o.addEventListener('click',function(){chooseLang(l);});
+                dd.appendChild(o);
+            });
+        }
+    }
+    
+    document.getElementById('langBtn').addEventListener('click',function(e){
+        e.stopPropagation();
+        document.getElementById('langDropdown').classList.toggle('open');
+    });
     document.addEventListener('click',closeLang);
     document.getElementById('langDropdown').addEventListener('click',function(e){e.stopPropagation();});
 
+    // Load languages in background
     client.getLanguages().then(function(langs){
-        var dd=document.getElementById('langDropdown');
-        if(!langs.length){document.getElementById('langStatus').textContent='No languages.';document.getElementById('langBtn').disabled=false;return;}
-        dd.innerHTML='';
-        langs.forEach(function(l){
-            var o=document.createElement('div');o.className='lang-option';o.dataset.code=l.code;
-            var flag = toFlag(l.flag || l.countryCode || l.code.slice(0,2) || '');
-            var name = l.name || l.country || l.code;
-            o.innerHTML='<span class="lang-flag">'+flag+'</span><span>'+name+'</span>';
-            o.addEventListener('click',function(){chooseLang(l);});
-            dd.appendChild(o);
-        });
-        var pref=getCookie('cds_lang')||(navigator.language||'').split('-')[0].toLowerCase()||'en';
-        chooseLang(langs.find(function(l){return l.code===pref;})||langs[0]);
-        document.getElementById('langBtn').disabled=false;
+        langsData = langs || [];
+        langsLoaded = true;
+        langsError = null;
+        
+        // If dropdown is open, refresh it
+        if(document.getElementById('langDropdown').classList.contains('open')){
+            renderLangDropdown();
+        }
+        
+        // Set default language if not already set
+        if(langsData.length){
+            var pref=getCookie('cds_lang')||(navigator.language||'').split('-')[0].toLowerCase()||'en';
+            var defaultLang=langsData.find(function(l){return l.code===pref;})||langsData[0];
+            chooseLang(defaultLang);
+        }
     }).catch(function(e){
-        document.getElementById('langStatus').textContent='Failed to load languages.';
-        document.getElementById('langBtn').disabled=false;
+        langsError = e.message || 'Failed to load languages';
+        langsLoaded = true;
+        // If dropdown is open, show error
+        if(document.getElementById('langDropdown').classList.contains('open')){
+            renderLangDropdown();
+        }
+        console.error('Failed to load languages:', e);
     });
 
     // ── Autocomplete ──────────────────────────────────────────────────────────
