@@ -397,12 +397,13 @@
                 renderLangDropdown();
             }
             
-            // Set default language
+            // Set default language - always check cookie and apply it
             if(langsData.length){
-                var currentLang = document.getElementById('langBtnLabel').textContent;
-                if(currentLang === 'Language'){
-                    var pref=getCookie('cds_lang')||(navigator.language||'').split('-')[0].toLowerCase()||'en';
-                    var defaultLang=langsData.find(function(l){return l.code===pref;})||langsData[0];
+                var pref=getCookie('cds_lang')||(navigator.language||'').split('-')[0].toLowerCase()||'en';
+                console.log('Language preference from cookie/navigator:', pref);
+                var defaultLang=langsData.find(function(l){return l.code===pref;})||langsData[0];
+                console.log('Selected default language:', defaultLang);
+                if(defaultLang){
                     chooseLang(defaultLang);
                 }
             }
