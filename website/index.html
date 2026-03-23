@@ -339,9 +339,10 @@
     function chooseLang(l){
         if(!l) return;
         client.setLanguage(l.code);
-        // Use the flag emoji directly from API
+        // Use the flag emoji directly from API, or convert countryCode to flag
         var flag = l.flag || toFlag(l.countryCode) || '🏳️';
         var name = l.name || l.code;
+        console.log('Setting language button:', { code: l.code, flag: flag, name: name, rawFlag: l.flag, countryCode: l.countryCode });
         document.getElementById('langBtnFlag').textContent = flag;
         document.getElementById('langBtnLabel').textContent = name;
         document.querySelectorAll('.lang-option').forEach(function(o){o.classList.toggle('active',o.dataset.code===l.code);});
@@ -363,13 +364,16 @@
             dd.innerHTML='<div class="lang-status">No languages available</div>';
         }else{
             dd.innerHTML='';
-            langsData.forEach(function(l){
+            console.log('Rendering language dropdown with', langsData.length, 'languages');
+            langsData.forEach(function(l, index){
+                console.log('Language', index, ':', { code: l.code, flag: l.flag, countryCode: l.countryCode, name: l.name });
                 var o=document.createElement('div');
                 o.className='lang-option';
                 o.dataset.code=l.code;
                 // Use the flag emoji directly from API, or convert countryCode if needed
                 var flag = l.flag || toFlag(l.countryCode) || '🏳️';
                 var name = l.name || l.code;
+                console.log('Rendering option:', { flag: flag, name: name });
                 o.innerHTML='<span class="lang-flag">'+flag+'</span><span>'+name+'</span>';
                 o.addEventListener('click',function(){chooseLang(l);});
                 dd.appendChild(o);
