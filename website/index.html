@@ -448,48 +448,6 @@
         }
     });
     document.getElementById('langDropdown').addEventListener('click',function(e){e.stopPropagation();});
-        }
-    }
-    
-    document.getElementById('langBtn').addEventListener('click',function(e){
-        e.stopPropagation();
-        var dd=document.getElementById('langDropdown');
-        var isOpen=dd.classList.contains('open');
-        if(!isOpen){
-            // Opening - render content first
-            renderLangDropdown();
-        }
-        dd.classList.toggle('open');
-    });
-    document.addEventListener('click',closeLang);
-    document.getElementById('langDropdown').addEventListener('click',function(e){e.stopPropagation();});
-
-    // Load languages in background
-    client.getLanguages().then(function(langs){
-        langsData = langs || [];
-        langsLoaded = true;
-        langsError = null;
-        
-        // If dropdown is open, refresh it
-        if(document.getElementById('langDropdown').classList.contains('open')){
-            renderLangDropdown();
-        }
-        
-        // Set default language if not already set
-        if(langsData.length){
-            var pref=getCookie('cds_lang')||(navigator.language||'').split('-')[0].toLowerCase()||'en';
-            var defaultLang=langsData.find(function(l){return l.code===pref;})||langsData[0];
-            chooseLang(defaultLang);
-        }
-    }).catch(function(e){
-        langsError = e.message || 'Failed to load languages';
-        langsLoaded = true;
-        // If dropdown is open, show error
-        if(document.getElementById('langDropdown').classList.contains('open')){
-            renderLangDropdown();
-        }
-        console.error('Failed to load languages:', e);
-    });
 
     // ── Autocomplete ──────────────────────────────────────────────────────────
     function setupAC(iid,sid,selid,key){
