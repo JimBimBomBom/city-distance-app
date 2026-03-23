@@ -85,23 +85,51 @@
         .title p  { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
 
         /* Language dropdown */
+        .lang-wrapper { position: relative; display: inline-block; }
         .lang-dropdown {
-            display: none; position: absolute; top: calc(100% + 4px); right: 0;
-            min-width: 160px; background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 8px; box-shadow: 0 8px 24px var(--shadow-heavy);
-            z-index: 2000; max-height: 260px; overflow-y: auto;
+            display: none; 
+            position: absolute; 
+            top: 100%; 
+            left: 0;
+            margin-top: 4px;
+            min-width: 200px; 
+            max-width: 280px;
+            background: var(--bg-card); 
+            border: 1px solid var(--border);
+            border-radius: 8px; 
+            box-shadow: 0 8px 24px var(--shadow-heavy);
+            z-index: 9999; 
+            max-height: 300px; 
+            overflow-y: auto;
         }
         .lang-dropdown.open { display: block; }
         .lang-option {
-            display: flex; align-items: center; gap: 8px;
-            padding: 8px 12px; font-size: 13px; color: var(--text);
-            cursor: pointer; border-bottom: 1px solid var(--border); transition: background .15s;
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+            padding: 10px 14px; 
+            font-size: 13px; 
+            color: var(--text);
+            cursor: pointer; 
+            border-bottom: 1px solid var(--border); 
+            transition: background .15s;
+            white-space: nowrap;
         }
         .lang-option:last-child { border-bottom: none; }
         .lang-option:hover { background: var(--bg-suggestion-hover); }
         .lang-option.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
-        .lang-flag { font-size: 16px; line-height: 1; font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; }
-        .lang-status { padding: 10px; font-size: 12px; color: var(--text-muted); text-align: center; }
+        .lang-flag { font-size: 16px; line-height: 1; font-family: "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif; flex-shrink: 0; }
+        .lang-status { 
+            padding: 12px 16px; 
+            font-size: 13px; 
+            color: var(--text-muted); 
+            text-align: center;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .lang-status.error { color: var(--error-text); }
 
         /* Search box */
         .search-box {
@@ -192,9 +220,7 @@
                 <span id="langBtnLabel">Language</span>
                 <span class="chevron">&#9662;</span>
             </button>
-            <div class="lang-dropdown" id="langDropdown">
-                <div class="lang-status" id="langStatus">Loading...</div>
-            </div>
+            <div class="lang-dropdown" id="langDropdown"></div>
         </div>
         <button class="topbar-btn" id="themeBtn" aria-label="Toggle dark mode">
             <span id="themeIcon">&#9790;</span>
@@ -294,24 +320,34 @@
     function err(m,d){document.getElementById('msgServerText').textContent=m;document.getElementById('msgServerDetail').textContent=d||'';document.getElementById('msgServer').classList.add('show');}
 
     // ── Language ──────────────────────────────────────────────────────────────
-    var langsData = []; // Store languages data
+    var langsData = [];
     var langsLoaded = false;
     var langsError = null;
+    var langsRetryCount = 0;
+    var MAX_RETRIES = 3;
+    var RETRY_DELAY = 2000; // 2 seconds
     
     function closeLang(){document.getElementById('langDropdown').classList.remove('open');}
     function chooseLang(l){
+        if(!l) return;
         client.setLanguage(l.code);
         var flag = toFlag(l.flag || l.countryCode || l.code.slice(0,2) || '');
         var name = l.name || l.country || l.code;
         document.getElementById('langBtnFlag').textContent = flag;
         document.getElementById('langBtnLabel').textContent = name;
         document.querySelectorAll('.lang-option').forEach(function(o){o.classList.toggle('active',o.dataset.code===l.code);});
-        setCookie('cds_lang',l.code,365); closeLang();
+        setCookie('cds_lang',l.code,365);
+        closeLang();
     }
+    
     function renderLangDropdown(){
         var dd=document.getElementById('langDropdown');
-        if(langsError){
-            dd.innerHTML='<div class="lang-status" style="color:var(--error-text)">Failed to load languages</div>';
+        if(!dd) return;
+        
+        if(langsError && langsRetryCount >= MAX_RETRIES){
+            dd.innerHTML='<div class="lang-status error">Failed to load languages after ' + MAX_RETRIES + ' attempts</div>';
+        }else if(langsError){
+            dd.innerHTML='<div class="lang-status">Loading languages... (attempt ' + (langsRetryCount + 1) + '/' + MAX_RETRIES + ')</div>';
         }else if(!langsLoaded){
             dd.innerHTML='<div class="lang-status">Loading languages...</div>';
         }else if(!langsData.length){
@@ -319,13 +355,99 @@
         }else{
             dd.innerHTML='';
             langsData.forEach(function(l){
-                var o=document.createElement('div');o.className='lang-option';o.dataset.code=l.code;
+                var o=document.createElement('div');
+                o.className='lang-option';
+                o.dataset.code=l.code;
                 var flag = toFlag(l.flag || l.countryCode || l.code.slice(0,2) || '');
                 var name = l.name || l.country || l.code;
                 o.innerHTML='<span class="lang-flag">'+flag+'</span><span>'+name+'</span>';
                 o.addEventListener('click',function(){chooseLang(l);});
                 dd.appendChild(o);
             });
+        }
+    }
+    
+    function loadLanguagesWithRetry(){
+        console.log('Loading languages... (attempt ' + (langsRetryCount + 1) + ')');
+        
+        client.getLanguages().then(function(langs){
+            console.log('Languages loaded successfully:', langs);
+            langsData = Array.isArray(langs) ? langs : [];
+            langsLoaded = true;
+            langsError = null;
+            langsRetryCount = 0;
+            
+            // Always refresh dropdown if open
+            var dd=document.getElementById('langDropdown');
+            if(dd && dd.classList.contains('open')){
+                renderLangDropdown();
+            }
+            
+            // Set default language
+            if(langsData.length){
+                var currentLang = document.getElementById('langBtnLabel').textContent;
+                if(currentLang === 'Language'){
+                    var pref=getCookie('cds_lang')||(navigator.language||'').split('-')[0].toLowerCase()||'en';
+                    var defaultLang=langsData.find(function(l){return l.code===pref;})||langsData[0];
+                    chooseLang(defaultLang);
+                }
+            }
+        }).catch(function(e){
+            console.error('Failed to load languages (attempt ' + (langsRetryCount + 1) + '):', e);
+            langsError = e.message || 'Failed to load languages';
+            langsLoaded = false;
+            
+            // Update dropdown if open
+            var dd=document.getElementById('langDropdown');
+            if(dd && dd.classList.contains('open')){
+                renderLangDropdown();
+            }
+            
+            // Retry if we haven't exceeded max retries
+            if(langsRetryCount < MAX_RETRIES){
+                langsRetryCount++;
+                console.log('Retrying in ' + RETRY_DELAY + 'ms...');
+                setTimeout(loadLanguagesWithRetry, RETRY_DELAY);
+            }else{
+                console.error('Max retries reached. Giving up.');
+                langsLoaded = true; // Mark as loaded to show error state
+                if(dd && dd.classList.contains('open')){
+                    renderLangDropdown();
+                }
+            }
+        });
+    }
+    
+    // Initial load
+    loadLanguagesWithRetry();
+    
+    document.getElementById('langBtn').addEventListener('click',function(e){
+        e.stopPropagation();
+        var dd=document.getElementById('langDropdown');
+        var isOpen=dd.classList.contains('open');
+        
+        if(!isOpen){
+            // Opening - always render current state
+            renderLangDropdown();
+        }
+        
+        dd.classList.toggle('open');
+        
+        // If failed and max retries reached, try one more time when user opens dropdown
+        if(!isOpen && langsError && langsRetryCount >= MAX_RETRIES){
+            langsRetryCount = 0;
+            langsError = null;
+            langsLoaded = false;
+            loadLanguagesWithRetry();
+        }
+    });
+    
+    document.addEventListener('click',function(e){
+        if(!e.target.closest('.lang-wrapper')){
+            closeLang();
+        }
+    });
+    document.getElementById('langDropdown').addEventListener('click',function(e){e.stopPropagation();});
         }
     }
     
