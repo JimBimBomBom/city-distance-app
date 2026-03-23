@@ -267,6 +267,14 @@
 
 <script>
 (function () {
+    // ── Check if CDS loaded correctly ─────────────────────────────────────────
+    if (typeof CDS === 'undefined' || !CDS.CDSClient) {
+        console.error('CDS library failed to load from CDN');
+        // Still initialize UI but show error state
+        document.body.innerHTML = '<div style="padding:20px;text-align:center;"><h1>Failed to load required libraries</h1><p>Please check your internet connection and refresh the page.</p></div>';
+        return;
+    }
+    
     // ── Init client from npm package ──────────────────────────────────────────
     var client = new CDS.CDSClient({
         baseURL:  '__API_BASE__',
