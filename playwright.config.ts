@@ -20,7 +20,7 @@ declare global {
  * The URL the proxy test-server listens on.
  * Set TEST_BASE_URL to override if port 3000 is occupied on your machine.
  */
-const BASE_URL = process.env.TEST_BASE_URL ?? 'http://localhost:3000';
+const BASE_URL = (process.env.TEST_BASE_URL ?? 'http://localhost:3000').trim();
 
 /** Port extracted from BASE_URL for the webServer command. */
 const proxyPort = (() => {
@@ -82,7 +82,10 @@ export default defineConfig({
   webServer: {
     command: `node scripts/test-server.js ${proxyPort}`,
     url: BASE_URL,
-    reuseExistingServer: true,
+    // Never reuse an existing server — always start our proxy fresh.
+    // If port 3000 is occupied locally by something else, override with:
+    //   TEST_BASE_URL=http://localhost:3001 npx playwright test
+    reuseExistingServer: false,
     timeout: 30000,
   },
 

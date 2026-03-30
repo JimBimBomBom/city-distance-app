@@ -36,11 +36,11 @@ const url   = require('url');
 
 // ── Configuration ────────────────────────────────────────────────────────────
 
-const BASE_URL    = process.env.TEST_BASE_URL ?? 'http://localhost:3000';
+const BASE_URL    = (process.env.TEST_BASE_URL ?? 'http://localhost:3000').trim();
 const PORT        = parseInt(process.argv[2] || ((() => { try { return new URL(BASE_URL).port || '3000'; } catch { return '3000'; } })()), 10);
-const BACKEND_URL = process.argv[3] || process.env.CDS_API_BASE || 'http://localhost:8080';
-const USERNAME    = process.env.CDS_AUTH_USERNAME ?? 'admin';
-const PASSWORD    = process.env.CDS_AUTH_PASSWORD ?? 'password';
+const BACKEND_URL = (process.argv[3] || process.env.CDS_API_BASE || 'http://localhost:8080').trim();
+const USERNAME    = (process.env.CDS_AUTH_USERNAME ?? 'admin').trim();
+const PASSWORD    = (process.env.CDS_AUTH_PASSWORD ?? 'password').trim();
 
 const SRC_HTML  = path.resolve(__dirname, '..', 'website', 'index.html');
 const TEST_DIR  = path.resolve(__dirname, '..', 'website', '.test');
