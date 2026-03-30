@@ -1,17 +1,16 @@
 import { defineConfig, devices } from '@playwright/test';
-import path from 'path';
 
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
       CI?: string;
-      /** Override the proxy server port if 3000 is occupied locally. */
+      /** Override the proxy server base URL if port 3000 is occupied locally. */
       TEST_BASE_URL?: string;
-      /** HTTP Basic username for the CDS backend (default: admin). */
+      /** HTTP Basic username passed to test-server.js for HTML substitution. */
       CDS_AUTH_USERNAME?: string;
-      /** HTTP Basic password for the CDS backend (default: password). */
+      /** HTTP Basic password passed to test-server.js for HTML substitution. */
       CDS_AUTH_PASSWORD?: string;
-      /** URL of the real CDS backend, used by the proxy server (default: http://localhost:8080). */
+      /** URL of the real CDS backend — test-server.js proxies API calls here. */
       CDS_API_BASE?: string;
     }
   }
@@ -19,13 +18,11 @@ declare global {
 
 /**
  * The URL the proxy test-server listens on.
- * Override with TEST_BASE_URL if port 3000 is occupied on your machine.
+ * Set TEST_BASE_URL to override if port 3000 is occupied on your machine.
  */
 const BASE_URL = process.env.TEST_BASE_URL ?? 'http://localhost:3000';
 
-/**
- * Port extracted from BASE_URL so the webServer command uses the same port.
- */
+/** Port extracted from BASE_URL for the webServer command. */
 const proxyPort = (() => {
   try { return new URL(BASE_URL).port || '3000'; }
   catch { return '3000'; }
@@ -33,12 +30,6 @@ const proxyPort = (() => {
 
 export default defineConfig({
   testDir: './tests',
-
-  /**
-   * Global setup writes website/.test/index.html with __API_BASE__ replaced
-   * by BASE_URL so the browser calls the proxy (same origin → no CORS).
-   */
-  globalSetup: path.resolve(__dirname, 'tests/global-setup.ts'),
 
   /* Fail the build on CI if test.only is accidentally left in source */
   forbidOnly: !!process.env.CI,
@@ -52,7 +43,6 @@ export default defineConfig({
   /* Run tests in files in parallel */
   fullyParallel: true,
 
-  /* Reporters */
   reporter: [['html'], ['list']],
 
   use: {
@@ -63,21 +53,31 @@ export default defineConfig({
   },
 
   /**
-   * Proxy web server — Playwright starts this automatically before tests run.
-   *   • Serves website/.test/index.html (written by globalSetup)
-   *   • Proxies /suggestions /languages /distance /health_check → real backend
+   * Proxy web server — Playwright starts this before running any tests.
    *
-   * Same-origin proxying means the browser page and its API calls share the
-   * same origin, eliminating CORS in every environment.
+   * test-server.js does the following synchronously at startup (before
+   * the HTTP server begins listening):
+   *   1. Reads website/index.html
+   *   2. Substitutes __API_BASE__ → BASE_URL, __AUTH_USERNAME/PASSWORD__
+   *   3. Writes website/.test/index.html
+   *   4. Starts the HTTP server on proxyPort
    *
-   * reuseExistingServer: true — if BASE_URL is already responding (e.g. a
-   * developer pre-started the proxy manually), Playwright reuses it and does
-   * not launch a second instance.  In CI nothing pre-occupies the port so
-   * Playwright starts the proxy fresh.
+   * It then serves that HTML for all non-API routes and proxies
+   * /suggestions, /languages, /distance, /health_check to CDS_API_BASE.
    *
-   * CDS_API_BASE is inherited from the process environment so the proxy
-   * knows where the real backend is (set in CI via the workflow env: block;
-   * set locally via shell or npm run backend:start).
+   * Doing the substitution inside the server startup (not in globalSetup)
+   * is essential: Playwright starts webServer BEFORE globalSetup, so any
+   * file-writing that needs to happen before the server serves requests
+   * must live in the server process itself.
+   *
+   * Same-origin proxying means no CORS in any environment.
+   *
+   * reuseExistingServer: true — if BASE_URL is already responding (developer
+   * pre-started the proxy manually) Playwright reuses it.  In CI the port is
+   * free so Playwright starts the proxy fresh.
+   *
+   * All env vars (TEST_BASE_URL, CDS_API_BASE, CDS_AUTH_USERNAME/PASSWORD)
+   * are inherited by the child process from the Playwright process environment.
    */
   webServer: {
     command: `node scripts/test-server.js ${proxyPort}`,
