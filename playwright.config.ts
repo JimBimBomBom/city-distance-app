@@ -63,16 +63,21 @@ export default defineConfig({
   },
 
   /**
-   * Proxy web server:
-   *   • Serves website/.test/index.html (globalSetup writes this)
+   * Proxy web server — Playwright starts this automatically before tests run.
+   *   • Serves website/.test/index.html (written by globalSetup)
    *   • Proxies /suggestions /languages /distance /health_check → real backend
    *
-   * reuseExistingServer: true  — if something is already listening on the
-   * port (e.g. the CI workflow pre-starts the server), reuse it instead of
-   * trying to start a second one.  On a fresh machine Playwright starts it.
+   * Same-origin proxying means the browser page and its API calls share the
+   * same origin, eliminating CORS in every environment.
    *
-   * The proxy reads CDS_API_BASE to know where the real backend is.
-   * Pass TEST_BASE_URL to override the port if 3000 is occupied locally.
+   * reuseExistingServer: true — if BASE_URL is already responding (e.g. a
+   * developer pre-started the proxy manually), Playwright reuses it and does
+   * not launch a second instance.  In CI nothing pre-occupies the port so
+   * Playwright starts the proxy fresh.
+   *
+   * CDS_API_BASE is inherited from the process environment so the proxy
+   * knows where the real backend is (set in CI via the workflow env: block;
+   * set locally via shell or npm run backend:start).
    */
   webServer: {
     command: `node scripts/test-server.js ${proxyPort}`,

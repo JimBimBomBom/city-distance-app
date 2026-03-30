@@ -160,44 +160,17 @@ jobs:
           exit 1
         fi
     
-    # Start proxy web server for Playwright tests.
-    # The proxy serves website/.test/index.html and forwards API paths
-    # (/suggestions, /languages, /distance, /health_check) to the backend,
-    # so the browser page and its API calls share the same origin (no CORS).
-    # globalSetup (run by Playwright) writes website/.test/index.html with
-    # __API_BASE__ replaced by http://localhost:3000 (the proxy's own URL).
-    # reuseExistingServer:true in playwright.config picks up this server.
-    - name: Start web server
-      run: |
-        echo "🌐 Starting proxy web server..."
-        CDS_API_BASE=http://localhost:8080 node scripts/test-server.js 3000 &
-
-        echo "⏳ Waiting for web server..."
-        attempt=0
-        max_ws_attempts=30
-        while [ $attempt -lt $max_ws_attempts ]; do
-          if curl -s http://localhost:3000 > /dev/null 2>&1; then
-            echo "✅ Web server is ready!"
-            break
-          fi
-          attempt=$((attempt + 1))
-          echo "Attempt $attempt/$max_ws_attempts - Web server not ready yet..."
-          sleep 1
-        done
-
-        if [ $attempt -eq $max_ws_attempts ]; then
-          echo "❌ Web server failed to start"
-          exit 1
-        fi
-
     # Install Playwright with Node.js
     - name: Install Playwright Browsers
       run: npx playwright install chromium firefox
 
     # Run E2E tests.
-    # TEST_BASE_URL tells globalSetup and playwright.config which URL the
-    # proxy is on, so __API_BASE__ in index.html and baseURL both resolve
-    # to the proxy — never directly to the backend (which would hit CORS).
+    # Playwright's webServer config (playwright.config.ts) starts the proxy
+    # itself — no need to pre-start it here.  The proxy serves
+    # website/.test/index.html and forwards API paths to the real backend,
+    # keeping the browser on the same origin as the API (no CORS).
+    # globalSetup writes website/.test/index.html with __API_BASE__ set to
+    # the proxy URL (TEST_BASE_URL) so the CDSClient calls the proxy.
     - name: Run Playwright tests
       run: npx playwright test
       env:
