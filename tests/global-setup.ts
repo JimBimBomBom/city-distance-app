@@ -5,25 +5,26 @@ import * as path from 'path';
  * Playwright global setup — runs once before all tests.
  *
  * Reads website/index.html (which contains __API_BASE__, __AUTH_USERNAME__,
- * __AUTH_PASSWORD__ placeholders), substitutes them with the values from
- * environment variables (falling back to local test defaults), and writes
- * the result to website/.test-index.html so the web server serves real URLs.
+ * __AUTH_PASSWORD__ placeholders) and writes website/.test/index.html with
+ * those placeholders replaced by real values.
  *
- * In CI the GitHub Actions workflow already substitutes the real index.html
- * via sed before this runs, so the placeholders will already be gone and this
- * is a no-op substitution on an already-substituted file.
+ * API_BASE is ALWAYS set to the proxy server's own origin (TEST_BASE_URL),
+ * never directly to the backend.  This means the browser page and its API
+ * calls share the same origin, eliminating CORS in every environment —
+ * local, CI, or otherwise.
+ *
+ * The proxy server (scripts/test-server.js) then forwards the API calls to
+ * the real backend using the CDS_API_BASE env var it receives at startup.
+ *
+ * Environment variables (all optional — sensible defaults used if absent):
+ *   TEST_BASE_URL      URL the proxy server is listening on  (default: http://localhost:3000)
+ *   CDS_AUTH_USERNAME  HTTP Basic username                   (default: admin)
+ *   CDS_AUTH_PASSWORD  HTTP Basic password                   (default: password)
  */
 export default async function globalSetup() {
-  const isCI = !!process.env.CI;
-
-  // In CI the backend is accessed directly (same network, no CORS).
-  // Locally the proxy server is the only safe way to avoid CORS — so we
-  // point __API_BASE__ at the proxy's own origin.  The proxy forwards API
-  // paths (/suggestions, /languages, /distance, /health_check) to the real
-  // backend, while the page itself is served from the same origin.
-  const localProxyPort = 3001;
-  const apiBase = process.env.CDS_API_BASE
-    ?? (isCI ? 'http://localhost:8080' : `http://localhost:${localProxyPort}`);
+  // The proxy URL is the same value as baseURL in playwright.config.ts.
+  // Override with TEST_BASE_URL if the default port is occupied locally.
+  const proxyUrl    = process.env.TEST_BASE_URL      ?? 'http://localhost:3000';
   const authUsername = process.env.CDS_AUTH_USERNAME ?? 'admin';
   const authPassword = process.env.CDS_AUTH_PASSWORD ?? 'password';
 
@@ -36,11 +37,11 @@ export default async function globalSetup() {
   }
 
   let html = fs.readFileSync(srcPath, 'utf8');
-  html = html.split('__API_BASE__').join(apiBase);
+  html = html.split('__API_BASE__').join(proxyUrl);
   html = html.split('__AUTH_USERNAME__').join(authUsername);
   html = html.split('__AUTH_PASSWORD__').join(authPassword);
 
   fs.writeFileSync(destPath, html, 'utf8');
   console.log(`[global-setup] Wrote substituted HTML → website/.test/index.html`);
-  console.log(`[global-setup]   API_BASE=${apiBase}  USERNAME=${authUsername}`);
+  console.log(`[global-setup]   API_BASE=${proxyUrl}  USERNAME=${authUsername}`);
 }

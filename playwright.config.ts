@@ -4,38 +4,41 @@ import path from 'path';
 declare global {
   namespace NodeJS {
     interface ProcessEnv {
-      CDS_BACKEND_URL?: string;
-      CDS_API_BASE?: string;
-      CDS_AUTH_USERNAME?: string;
-      CDS_AUTH_PASSWORD?: string;
       CI?: string;
+      /** Override the proxy server port if 3000 is occupied locally. */
+      TEST_BASE_URL?: string;
+      /** HTTP Basic username for the CDS backend (default: admin). */
+      CDS_AUTH_USERNAME?: string;
+      /** HTTP Basic password for the CDS backend (default: password). */
+      CDS_AUTH_PASSWORD?: string;
+      /** URL of the real CDS backend, used by the proxy server (default: http://localhost:8080). */
+      CDS_API_BASE?: string;
     }
   }
 }
 
 /**
- * Playwright configuration for E2E testing of the CDS website.
- *
- * globalSetup writes website/.test/index.html with placeholders substituted.
- * The webServer then serves that directory on port 3000.
- *
- * In CI, the GitHub Actions workflow substitutes the real website/index.html
- * via sed before running Playwright, so globalSetup becomes a no-op there
- * (it re-substitutes already-real values).  The CI workflow's "Start web
- * server" step also pre-starts a server, so reuseExistingServer keeps it.
- *
- * Locally: run `npm run backend:start` first, then `npm run test:e2e`.
- *
- * @see https://playwright.dev/docs/test-configuration
+ * The URL the proxy test-server listens on.
+ * Override with TEST_BASE_URL if port 3000 is occupied on your machine.
  */
+const BASE_URL = process.env.TEST_BASE_URL ?? 'http://localhost:3000';
+
+/**
+ * Port extracted from BASE_URL so the webServer command uses the same port.
+ */
+const proxyPort = (() => {
+  try { return new URL(BASE_URL).port || '3000'; }
+  catch { return '3000'; }
+})();
+
 export default defineConfig({
   testDir: './tests',
 
-  /* Global setup: writes website/.test/index.html with substituted values */
+  /**
+   * Global setup writes website/.test/index.html with __API_BASE__ replaced
+   * by BASE_URL so the browser calls the proxy (same origin → no CORS).
+   */
   globalSetup: path.resolve(__dirname, 'tests/global-setup.ts'),
-
-  /* Run tests in files in parallel */
-  fullyParallel: true,
 
   /* Fail the build on CI if test.only is accidentally left in source */
   forbidOnly: !!process.env.CI,
@@ -43,58 +46,49 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
 
-  /* Single worker on CI to avoid resource contention */
+  /* Single worker on CI to avoid Docker resource contention */
   workers: process.env.CI ? 1 : undefined,
+
+  /* Run tests in files in parallel */
+  fullyParallel: true,
 
   /* Reporters */
   reporter: [['html'], ['list']],
 
-  /* Shared settings for all projects */
   use: {
-    baseURL: process.env.CI ? 'http://localhost:3000' : 'http://localhost:3001',
-
-    /* Collect trace on first retry */
+    baseURL: BASE_URL,
     trace: 'on-first-retry',
-
-    /* Screenshot on failure */
     screenshot: 'only-on-failure',
-
-    /* Video on first retry */
     video: 'on-first-retry',
   },
 
-  /*
-   * Web server — starts our proxy server that:
-   *   • Serves website/.test/index.html (placeholder-substituted copy)
-   *   • Proxies /suggestions, /languages, /distance, /health_check → backend
+  /**
+   * Proxy web server:
+   *   • Serves website/.test/index.html (globalSetup writes this)
+   *   • Proxies /suggestions /languages /distance /health_check → real backend
    *
-   * Same-origin proxying eliminates CORS issues in local test runs.
-   * reuseExistingServer: true so CI's pre-started server is reused.
+   * reuseExistingServer: true  — if something is already listening on the
+   * port (e.g. the CI workflow pre-starts the server), reuse it instead of
+   * trying to start a second one.  On a fresh machine Playwright starts it.
+   *
+   * The proxy reads CDS_API_BASE to know where the real backend is.
+   * Pass TEST_BASE_URL to override the port if 3000 is occupied locally.
    */
   webServer: {
-    command: process.env.CI
-      ? 'node scripts/test-server.js 3000'
-      : 'node scripts/test-server.js 3001',
-    url: process.env.CI ? 'http://localhost:3000' : 'http://localhost:3001',
-    // In CI the workflow pre-starts the server; reuse it.
-    // Locally always start fresh so stale servers don't mask the proxy.
-    reuseExistingServer: !!process.env.CI,
+    command: `node scripts/test-server.js ${proxyPort}`,
+    url: BASE_URL,
+    reuseExistingServer: true,
     timeout: 30000,
   },
 
-  /* Browser projects */
   projects: [
     {
       name: 'chromium',
-      use: {
-        ...devices['Desktop Chrome'],
-      },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
-      use: {
-        ...devices['Desktop Firefox'],
-      },
+      use: { ...devices['Desktop Firefox'] },
     },
   ],
 });

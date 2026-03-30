@@ -160,27 +160,18 @@ jobs:
           exit 1
         fi
     
-    # Inject test backend URL into website for E2E testing
-    - name: Inject test environment variables
-      run: |
-        echo "🔧 Injecting test backend URL into website..."
-        sed -i 's|__API_BASE__|http://localhost:8080|g' website/index.html
-        sed -i 's|__AUTH_USERNAME__|admin|g' website/index.html
-        sed -i 's|__AUTH_PASSWORD__|password|g' website/index.html
-    
-    # Start web server for Playwright tests
-    # Copies the sed-substituted index.html into website/.test/ and starts
-    # our proxy server (which also routes API calls to the backend, removing
-    # any CORS issues).  reuseExistingServer:true in playwright.config will
-    # then skip starting a second server when Playwright runs.
+    # Start proxy web server for Playwright tests.
+    # The proxy serves website/.test/index.html and forwards API paths
+    # (/suggestions, /languages, /distance, /health_check) to the backend,
+    # so the browser page and its API calls share the same origin (no CORS).
+    # globalSetup (run by Playwright) writes website/.test/index.html with
+    # __API_BASE__ replaced by http://localhost:3000 (the proxy's own URL).
+    # reuseExistingServer:true in playwright.config picks up this server.
     - name: Start web server
       run: |
         echo "🌐 Starting proxy web server..."
-        mkdir -p website/.test
-        cp website/index.html website/.test/index.html
         CDS_API_BASE=http://localhost:8080 node scripts/test-server.js 3000 &
-        
-        # Wait for web server to be ready
+
         echo "⏳ Waiting for web server..."
         attempt=0
         max_ws_attempts=30
@@ -193,7 +184,7 @@ jobs:
           echo "Attempt $attempt/$max_ws_attempts - Web server not ready yet..."
           sleep 1
         done
-        
+
         if [ $attempt -eq $max_ws_attempts ]; then
           echo "❌ Web server failed to start"
           exit 1
@@ -203,12 +194,18 @@ jobs:
     - name: Install Playwright Browsers
       run: npx playwright install chromium firefox
 
-    # Run E2E tests against the backend
+    # Run E2E tests.
+    # TEST_BASE_URL tells globalSetup and playwright.config which URL the
+    # proxy is on, so __API_BASE__ in index.html and baseURL both resolve
+    # to the proxy — never directly to the backend (which would hit CORS).
     - name: Run Playwright tests
       run: npx playwright test
       env:
         CI: true
-        CDS_BACKEND_URL: http://localhost:8080
+        TEST_BASE_URL: http://localhost:3000
+        CDS_API_BASE: http://localhost:8080
+        CDS_AUTH_USERNAME: admin
+        CDS_AUTH_PASSWORD: password
 
     # Stop backend after tests
     - name: Stop CDS Backend
