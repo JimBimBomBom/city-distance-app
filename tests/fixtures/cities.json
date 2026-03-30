@@ -71,6 +71,96 @@
       "adminRegion": "Singapore",
       "population": 5686000,
       "flag": "SG"
+    },
+    {
+      "id": "9",
+      "name": "Madrid",
+      "countryCode": "ES",
+      "country": "Spain",
+      "adminRegion": "Community of Madrid",
+      "population": 3305408,
+      "flag": "ES"
+    },
+    {
+      "id": "10",
+      "name": "Rome",
+      "countryCode": "IT",
+      "country": "Italy",
+      "adminRegion": "Lazio",
+      "population": 2872800,
+      "flag": "IT"
+    },
+    {
+      "id": "11",
+      "name": "Amsterdam",
+      "countryCode": "NL",
+      "country": "Netherlands",
+      "adminRegion": "North Holland",
+      "population": 921402,
+      "flag": "NL"
+    },
+    {
+      "id": "12",
+      "name": "Vienna",
+      "countryCode": "AT",
+      "country": "Austria",
+      "adminRegion": "Vienna",
+      "population": 1897491,
+      "flag": "AT"
+    },
+    {
+      "id": "13",
+      "name": "Warsaw",
+      "countryCode": "PL",
+      "country": "Poland",
+      "adminRegion": "Masovian Voivodeship",
+      "population": 1794166,
+      "flag": "PL"
+    },
+    {
+      "id": "14",
+      "name": "Lisbon",
+      "countryCode": "PT",
+      "country": "Portugal",
+      "adminRegion": "Lisbon",
+      "population": 545245,
+      "flag": "PT"
+    },
+    {
+      "id": "15",
+      "name": "Prague",
+      "countryCode": "CZ",
+      "country": "Czech Republic",
+      "adminRegion": "Prague",
+      "population": 1335084,
+      "flag": "CZ"
+    },
+    {
+      "id": "16",
+      "name": "Seoul",
+      "countryCode": "KR",
+      "country": "South Korea",
+      "adminRegion": "Seoul",
+      "population": 9776000,
+      "flag": "KR"
+    },
+    {
+      "id": "17",
+      "name": "Mumbai",
+      "countryCode": "IN",
+      "country": "India",
+      "adminRegion": "Maharashtra",
+      "population": 20667656,
+      "flag": "IN"
+    },
+    {
+      "id": "18",
+      "name": "São Paulo",
+      "countryCode": "BR",
+      "country": "Brazil",
+      "adminRegion": "São Paulo",
+      "population": 12300000,
+      "flag": "BR"
     }
   ]
 }

@@ -169,10 +169,16 @@ jobs:
         sed -i 's|__AUTH_PASSWORD__|password|g' website/index.html
     
     # Start web server for Playwright tests
+    # Copies the sed-substituted index.html into website/.test/ and starts
+    # our proxy server (which also routes API calls to the backend, removing
+    # any CORS issues).  reuseExistingServer:true in playwright.config will
+    # then skip starting a second server when Playwright runs.
     - name: Start web server
       run: |
-        echo "🌐 Starting web server..."
-        npx serve website -p 3000 --single &
+        echo "🌐 Starting proxy web server..."
+        mkdir -p website/.test
+        cp website/index.html website/.test/index.html
+        CDS_API_BASE=http://localhost:8080 node scripts/test-server.js 3000 &
         
         # Wait for web server to be ready
         echo "⏳ Waiting for web server..."
@@ -195,7 +201,7 @@ jobs:
 
     # Install Playwright with Node.js
     - name: Install Playwright Browsers
-      run: npx playwright install chromium
+      run: npx playwright install chromium firefox
 
     # Run E2E tests against the backend
     - name: Run Playwright tests

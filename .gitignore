@@ -7,6 +7,9 @@ dist
 /playwright/.cache/
 /blob-report/
 
+# Generated test HTML (placeholder-substituted copy, never commit)
+/website/.test/
+
 # Environment
 .env
 .env.local
