@@ -22,12 +22,18 @@ async function waitForSuggestions(
   // Derive suggestions panel id from input id if not provided:
   // '#city1' → '#suggestions1', '#city2' → '#suggestions2'
   const panelId = suggestionsId ?? inputId.replace('#city', '#suggestions');
+  // Use click() + pressSequentially() instead of fill() to ensure the
+  // input event fires correctly in all browsers.  fill() sets the value
+  // programmatically and may not trigger the oninput handler in some
+  // browser/CDP configurations, causing suggestions to never appear.
+  await page.locator(inputId).click();
+  await page.locator(inputId).clear();
   await Promise.all([
     page.waitForResponse(
       (res) => res.url().includes('/suggestions') && res.status() === 200,
       { timeout: 15000 }
     ),
-    page.locator(inputId).fill(query),
+    page.locator(inputId).pressSequentially(query, { delay: 20 }),
   ]);
   // Wait for the DOM to reflect the response — CI can be slower here
   await expect(page.locator(panelId)).toHaveClass(/active/, { timeout: 10000 });
@@ -61,20 +67,18 @@ async function searchAndSelectCity(
 test.describe('City Distance Website', () => {
 
   test.beforeEach(async ({ page }) => {
-    // Register the /languages listener BEFORE navigating so we never miss
-    // the call that fires immediately on page load.  Awaiting this response
-    // guarantees two things:
-    //   1. The CDS library has fully loaded from CDN (it must load before
-    //      the app calls client.getLanguages())
-    //   2. The languages data is populated in the app — subsequent autocomplete
-    //      and language-dropdown interactions are safe to start immediately
-    const languagesReady = page.waitForResponse(
-      (res) => res.url().includes('/languages') && res.status() === 200,
-      { timeout: 20000 }
-    );
     await page.goto('/');
     await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
-    await languagesReady;
+    // Wait for the language button label to change from the placeholder
+    // "Language" to an actual language name.  This is the most reliable
+    // signal that:
+    //   1. The CDS library has loaded from CDN
+    //   2. client.getLanguages() has resolved
+    //   3. chooseLang() has been called → langsData is populated
+    //   4. The CDSClient is fully initialised and ready for API calls
+    // Using a DOM-state check avoids the network-interception race where
+    // waitForResponse can match stale responses from previous navigations.
+    await expect(page.locator('#langBtnLabel')).not.toHaveText('Language', { timeout: 20000 });
   });
 
   // ── 1. Page structure ─────────────────────────────────────────────────────
@@ -259,26 +263,21 @@ test.describe('City Distance Website', () => {
     });
 
     test('language dropdown loads options from the backend', async ({ page }) => {
-      // The /languages call fires immediately on page load. We must register
-      // waitForResponse BEFORE goto (via beforeEach the page is already
-      // loaded), so instead we wait for the UI result: the langBtn label
-      // changes from "Language" once languages are fetched and applied.
-      // Open the dropdown and wait for options to render.
+      // beforeEach already waited for #langBtnLabel to change, proving
+      // langsData is populated.  Opening the dropdown must render options
+      // synchronously (renderLangDropdown runs on click before the toggle).
       await page.locator('#langBtn').click();
       const options = page.locator('.lang-option');
-      // The dropdown renders options once the API call resolves (~1-2s).
-      await expect(options.first()).toBeVisible({ timeout: 15000 });
+      await expect(options.first()).toBeVisible({ timeout: 5000 });
       expect(await options.count()).toBeGreaterThan(0);
     });
 
     test('selecting a language updates the button label', async ({ page }) => {
       await page.locator('#langBtn').click();
       const options = page.locator('.lang-option');
-      await expect(options.first()).toBeVisible({ timeout: 15000 });
-      const count = await options.count();
-      expect(count).toBeGreaterThan(1);
+      await expect(options.first()).toBeVisible({ timeout: 5000 });
+      expect(await options.count()).toBeGreaterThan(1);
 
-      // Pick the second option (index 1)
       const secondOption = options.nth(1);
       const langName = await secondOption.locator('span:last-child').textContent();
       await secondOption.click();
@@ -289,7 +288,7 @@ test.describe('City Distance Website', () => {
     test('selecting a language saves the cds_lang cookie', async ({ page }) => {
       await page.locator('#langBtn').click();
       const options = page.locator('.lang-option');
-      await expect(options.first()).toBeVisible({ timeout: 15000 });
+      await expect(options.first()).toBeVisible({ timeout: 5000 });
       await options.nth(1).click();
 
       const cookies = await page.context().cookies();
@@ -301,19 +300,15 @@ test.describe('City Distance Website', () => {
     test('selected language option gets active class on selection', async ({ page }) => {
       await page.locator('#langBtn').click();
       const options = page.locator('.lang-option');
-      await expect(options.first()).toBeVisible({ timeout: 15000 });
+      await expect(options.first()).toBeVisible({ timeout: 5000 });
 
-      // Click the second option and immediately check it has active class
-      // (chooseLang applies active class to DOM elements that currently exist)
       const target = options.nth(1);
       await target.click();
 
-      // The dropdown closes on selection. Re-open it.
+      // Re-open to inspect active class
       await page.locator('#langBtn').click();
       await expect(options.first()).toBeVisible({ timeout: 5000 });
 
-      // The active option should be whichever was last selected — verify that
-      // exactly one option carries the active class.
       const activeOptions = page.locator('.lang-option.active');
       expect(await activeOptions.count()).toBeGreaterThan(0);
     });
