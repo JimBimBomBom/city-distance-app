@@ -5,35 +5,37 @@ import { test, expect, Page } from '@playwright/test';
 // ---------------------------------------------------------------------------
 
 /**
- * Wait for the backend API to respond to a /suggestions request.
- * Uses waitForResponse so we don't rely on arbitrary timeouts.
+ * Type a query into an input and wait for the suggestions panel to become
+ * active.  Does NOT rely on arbitrary timeouts — it waits for:
+ *   1. The /suggestions network response (proves the API call completed)
+ *   2. The panel's .active class (proves the JS callback has rendered results)
+ *
+ * The two waits together close the race between "response arrived" and
+ * "DOM updated", which is particularly important on slow CI workers.
  */
-async function waitForSuggestions(page: Page, inputId: string, query: string) {
-  const [response] = await Promise.all([
+async function waitForSuggestions(
+  page: Page,
+  inputId: string,
+  query: string,
+  suggestionsId?: string
+) {
+  // Derive suggestions panel id from input id if not provided:
+  // '#city1' → '#suggestions1', '#city2' → '#suggestions2'
+  const panelId = suggestionsId ?? inputId.replace('#city', '#suggestions');
+  await Promise.all([
     page.waitForResponse(
       (res) => res.url().includes('/suggestions') && res.status() === 200,
-      { timeout: 10000 }
+      { timeout: 15000 }
     ),
     page.locator(inputId).fill(query),
   ]);
-  return response;
+  // Wait for the DOM to reflect the response — CI can be slower here
+  await expect(page.locator(panelId)).toHaveClass(/active/, { timeout: 10000 });
 }
 
 /**
- * Select the first suggestion item from a given suggestions panel.
- * Asserts the panel is visible before clicking.
- */
-async function selectFirstSuggestion(page: Page, suggestionsId: string) {
-  const panel = page.locator(suggestionsId);
-  await expect(panel).toHaveClass(/active/, { timeout: 8000 });
-  const firstItem = panel.locator('.suggestion-item:not(.disabled)').first();
-  await expect(firstItem).toBeVisible({ timeout: 5000 });
-  await firstItem.click();
-}
-
-/**
- * Full helper: type a query, wait for API response, click the first result.
- * Returns the text content of the selected city name.
+ * Type a query, wait for suggestions to appear, click the first result.
+ * Returns the locale-aware city name that was selected.
  */
 async function searchAndSelectCity(
   page: Page,
@@ -41,10 +43,12 @@ async function searchAndSelectCity(
   suggestionsId: string,
   query: string
 ): Promise<string> {
-  await waitForSuggestions(page, inputId, query);
+  // waitForSuggestions already waits for both the network response AND
+  // the panel's .active class — no need to repeat the check here
+  await waitForSuggestions(page, inputId, query, suggestionsId);
   const panel = page.locator(suggestionsId);
-  await expect(panel).toHaveClass(/active/, { timeout: 8000 });
   const firstItem = panel.locator('.suggestion-item:not(.disabled)').first();
+  await expect(firstItem).toBeVisible({ timeout: 5000 });
   const cityName = await firstItem.locator('.city-name span').last().textContent();
   await firstItem.click();
   return cityName?.trim() ?? '';
@@ -57,8 +61,20 @@ async function searchAndSelectCity(
 test.describe('City Distance Website', () => {
 
   test.beforeEach(async ({ page }) => {
+    // Register the /languages listener BEFORE navigating so we never miss
+    // the call that fires immediately on page load.  Awaiting this response
+    // guarantees two things:
+    //   1. The CDS library has fully loaded from CDN (it must load before
+    //      the app calls client.getLanguages())
+    //   2. The languages data is populated in the app — subsequent autocomplete
+    //      and language-dropdown interactions are safe to start immediately
+    const languagesReady = page.waitForResponse(
+      (res) => res.url().includes('/languages') && res.status() === 200,
+      { timeout: 20000 }
+    );
     await page.goto('/');
     await expect(page.locator('h1')).toBeVisible({ timeout: 10000 });
+    await languagesReady;
   });
 
   // ── 1. Page structure ─────────────────────────────────────────────────────
@@ -316,20 +332,18 @@ test.describe('City Distance Website', () => {
 
     test('two characters trigger a suggestions API call', async ({ page }) => {
       await waitForSuggestions(page, '#city1', 'Lo');
-      await expect(page.locator('#suggestions1')).toHaveClass(/active/, { timeout: 5000 });
+      // waitForSuggestions already asserts .active — nothing more to check
     });
 
     test('typing a known city name shows suggestion items', async ({ page }) => {
       await waitForSuggestions(page, '#city1', 'Lon');
       const panel = page.locator('#suggestions1');
-      await expect(panel).toHaveClass(/active/, { timeout: 5000 });
       expect(await panel.locator('.suggestion-item').count()).toBeGreaterThan(0);
     });
 
     test('suggestion items show city name and badges', async ({ page }) => {
       await waitForSuggestions(page, '#city1', 'Tokyo');
       const panel = page.locator('#suggestions1');
-      await expect(panel).toHaveClass(/active/, { timeout: 5000 });
       const firstItem = panel.locator('.suggestion-item').first();
       await expect(firstItem.locator('.city-name')).toBeVisible();
       expect(await firstItem.locator('.badge').count()).toBeGreaterThan(0);
@@ -343,10 +357,11 @@ test.describe('City Distance Website', () => {
     });
 
     test('selected chip contains the city name', async ({ page }) => {
-      await searchAndSelectCity(page, '#city1', '#suggestions1', 'Berlin');
+      // Use the locale-aware name the backend returns — may not be English
+      const cityName = await searchAndSelectCity(page, '#city1', '#suggestions1', 'Berlin');
       const chip = page.locator('#selected1');
       await expect(chip).toHaveClass(/show/);
-      await expect(chip).toContainText('Berlin');
+      await expect(chip).toContainText(cityName);
     });
 
     test('clearing the input hides the chip', async ({ page }) => {
@@ -359,7 +374,6 @@ test.describe('City Distance Website', () => {
     test('suggestions panel closes after selection', async ({ page }) => {
       await waitForSuggestions(page, '#city1', 'Sydney');
       const panel = page.locator('#suggestions1');
-      await expect(panel).toHaveClass(/active/, { timeout: 5000 });
       await panel.locator('.suggestion-item:not(.disabled)').first().click();
       await expect(panel).not.toHaveClass(/active/);
     });
@@ -367,7 +381,6 @@ test.describe('City Distance Website', () => {
     test('Escape key closes suggestions panel', async ({ page }) => {
       await waitForSuggestions(page, '#city1', 'Berlin');
       const panel = page.locator('#suggestions1');
-      await expect(panel).toHaveClass(/active/, { timeout: 5000 });
       await page.locator('#city1').press('Escape');
       await expect(panel).not.toHaveClass(/active/);
     });
@@ -375,7 +388,6 @@ test.describe('City Distance Website', () => {
     test('clicking outside closes suggestions panel', async ({ page }) => {
       await waitForSuggestions(page, '#city1', 'Madrid');
       const panel = page.locator('#suggestions1');
-      await expect(panel).toHaveClass(/active/, { timeout: 5000 });
       await page.locator('h1').click();
       await expect(panel).not.toHaveClass(/active/);
     });
@@ -394,7 +406,6 @@ test.describe('City Distance Website', () => {
     test('typing a known city name shows suggestion items', async ({ page }) => {
       await waitForSuggestions(page, '#city2', 'Par');
       const panel = page.locator('#suggestions2');
-      await expect(panel).toHaveClass(/active/, { timeout: 5000 });
       expect(await panel.locator('.suggestion-item').count()).toBeGreaterThan(0);
     });
 
@@ -419,8 +430,6 @@ test.describe('City Distance Website', () => {
     test('ArrowDown highlights the first suggestion item', async ({ page }) => {
       await waitForSuggestions(page, '#city1', 'New');
       const panel = page.locator('#suggestions1');
-      await expect(panel).toHaveClass(/active/, { timeout: 5000 });
-
       await page.locator('#city1').press('ArrowDown');
       expect(await panel.locator('.kbd-selected').count()).toBe(1);
     });
@@ -428,9 +437,7 @@ test.describe('City Distance Website', () => {
     test('ArrowDown then ArrowDown highlights the second item', async ({ page }) => {
       await waitForSuggestions(page, '#city1', 'New');
       const panel = page.locator('#suggestions1');
-      await expect(panel).toHaveClass(/active/, { timeout: 5000 });
 
-      // Need at least 2 items; New York + Newark etc. should qualify
       const items = panel.locator('.suggestion-item');
       const count = await items.count();
       if (count < 2) {
@@ -445,9 +452,6 @@ test.describe('City Distance Website', () => {
 
     test('Enter on a highlighted item selects it and shows chip', async ({ page }) => {
       await waitForSuggestions(page, '#city1', 'New');
-      const panel = page.locator('#suggestions1');
-      await expect(panel).toHaveClass(/active/, { timeout: 5000 });
-
       await page.locator('#city1').press('ArrowDown');
       await page.locator('#city1').press('Enter');
       await expect(page.locator('#selected1')).toHaveClass(/show/, { timeout: 5000 });
@@ -456,8 +460,6 @@ test.describe('City Distance Website', () => {
     test('ArrowUp from unselected state highlights a suggestion item', async ({ page }) => {
       await waitForSuggestions(page, '#city1', 'New');
       const panel = page.locator('#suggestions1');
-      await expect(panel).toHaveClass(/active/, { timeout: 5000 });
-
       await page.locator('#city1').press('ArrowUp');
       // The app starts kb=-1; ArrowUp gives ((-1-1)+count)%count = count-2.
       // Regardless of the exact index, exactly one item should be kbd-selected.
@@ -473,11 +475,8 @@ test.describe('City Distance Website', () => {
     test('a city selected in city1 appears as disabled in city2 suggestions', async ({ page }) => {
       await searchAndSelectCity(page, '#city1', '#suggestions1', 'London');
 
-      // Now search the same city in city2
       await waitForSuggestions(page, '#city2', 'London');
       const panel2 = page.locator('#suggestions2');
-      await expect(panel2).toHaveClass(/active/, { timeout: 5000 });
-
       // The London item in city2 should be marked disabled
       const londonItem = panel2.locator('.suggestion-item.disabled');
       expect(await londonItem.count()).toBeGreaterThan(0);
@@ -488,8 +487,6 @@ test.describe('City Distance Website', () => {
 
       await waitForSuggestions(page, '#city2', 'London');
       const panel2 = page.locator('#suggestions2');
-      await expect(panel2).toHaveClass(/active/, { timeout: 5000 });
-
       const disabledItem = panel2.locator('.suggestion-item.disabled').first();
       await disabledItem.click();
       await expect(page.locator('#msgValidation')).toHaveClass(/show/, { timeout: 5000 });

@@ -50,6 +50,11 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
+    // Give individual actions more time on slow CI runners.
+    // Most actions complete in <1s locally; 15s covers CDN latency spikes.
+    actionTimeout: 15000,
+    // Navigation (goto) can be slow while Elasticsearch/backend warm up.
+    navigationTimeout: 30000,
   },
 
   /**
@@ -86,7 +91,8 @@ export default defineConfig({
     // If port 3000 is occupied locally by something else, override with:
     //   TEST_BASE_URL=http://localhost:3001 npx playwright test
     reuseExistingServer: false,
-    timeout: 30000,
+    // 60s gives CI runners time to start Node and write the substituted HTML
+    timeout: 60000,
   },
 
   projects: [
