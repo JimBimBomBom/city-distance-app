@@ -171,14 +171,14 @@ jobs:
     # keeping the browser on the same origin as the API (no CORS).
     # globalSetup writes website/.test/index.html with __API_BASE__ set to
     # the proxy URL (TEST_BASE_URL) so the CDSClient calls the proxy.
-    # - name: Run Playwright tests
-    #   run: npx playwright test
-    #   env:
-    #     CI: true
-    #     TEST_BASE_URL: http://localhost:3000
-    #     CDS_API_BASE: http://localhost:8080
-    #     CDS_AUTH_USERNAME: admin
-    #     CDS_AUTH_PASSWORD: password
+    - name: Run Playwright tests
+      run: npx playwright test
+      env:
+        CI: true
+        TEST_BASE_URL: http://localhost:3000
+        CDS_API_BASE: http://localhost:8080
+        CDS_AUTH_USERNAME: admin
+        CDS_AUTH_PASSWORD: password
 
     # Stop backend after tests
     - name: Stop CDS Backend
