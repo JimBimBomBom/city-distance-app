@@ -4,26 +4,24 @@ declare global {
   namespace NodeJS {
     interface ProcessEnv {
       CI?: string;
-      /** Override the proxy server base URL if port 3000 is occupied locally. */
+      /** Override the server base URL if port 3000 is occupied locally. */
       TEST_BASE_URL?: string;
-      /** HTTP Basic username passed to test-server.js for HTML substitution. */
+      /** HTTP Basic username injected into the test HTML (default: admin). */
       CDS_AUTH_USERNAME?: string;
-      /** HTTP Basic password passed to test-server.js for HTML substitution. */
+      /** HTTP Basic password injected into the test HTML (default: password). */
       CDS_AUTH_PASSWORD?: string;
-      /** URL of the real CDS backend — test-server.js proxies API calls here. */
-      CDS_API_BASE?: string;
     }
   }
 }
 
 /**
- * The URL the proxy test-server listens on.
+ * The URL the test server listens on.
  * Set TEST_BASE_URL to override if port 3000 is occupied on your machine.
  */
 const BASE_URL = (process.env.TEST_BASE_URL ?? 'http://localhost:3000').trim();
 
 /** Port extracted from BASE_URL for the webServer command. */
-const proxyPort = (() => {
+const serverPort = (() => {
   try { return new URL(BASE_URL).port || '3000'; }
   catch { return '3000'; }
 })();
@@ -37,10 +35,9 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 2 : 0,
 
-  /* Single worker on CI to avoid Docker resource contention */
+  /* Single worker on CI */
   workers: process.env.CI ? 1 : undefined,
 
-  /* Run tests in files in parallel */
   fullyParallel: true,
 
   reporter: [['html'], ['list']],
@@ -50,48 +47,24 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
-    // Give individual actions more time on slow CI runners.
-    // Most actions complete in <1s locally; 15s covers CDN latency spikes.
     actionTimeout: 15000,
-    // Navigation (goto) can be slow while Elasticsearch/backend warm up.
     navigationTimeout: 30000,
   },
 
   /**
-   * Proxy web server — Playwright starts this before running any tests.
+   * Static test server — substitutes __API_BASE__ / credentials into
+   * website/index.html and serves the result.  API calls (/languages,
+   * /suggestions, /distance) are intercepted by Playwright's page.route()
+   * mocks in each test; no real backend is required.
    *
-   * test-server.js does the following synchronously at startup (before
-   * the HTTP server begins listening):
-   *   1. Reads website/index.html
-   *   2. Substitutes __API_BASE__ → BASE_URL, __AUTH_USERNAME/PASSWORD__
-   *   3. Writes website/.test/index.html
-   *   4. Starts the HTTP server on proxyPort
-   *
-   * It then serves that HTML for all non-API routes and proxies
-   * /suggestions, /languages, /distance, /health_check to CDS_API_BASE.
-   *
-   * Doing the substitution inside the server startup (not in globalSetup)
-   * is essential: Playwright starts webServer BEFORE globalSetup, so any
-   * file-writing that needs to happen before the server serves requests
-   * must live in the server process itself.
-   *
-   * Same-origin proxying means no CORS in any environment.
-   *
-   * reuseExistingServer: true — if BASE_URL is already responding (developer
-   * pre-started the proxy manually) Playwright reuses it.  In CI the port is
-   * free so Playwright starts the proxy fresh.
-   *
-   * All env vars (TEST_BASE_URL, CDS_API_BASE, CDS_AUTH_USERNAME/PASSWORD)
-   * are inherited by the child process from the Playwright process environment.
+   * reuseExistingServer: false — always start fresh so the substituted HTML
+   * reflects the current TEST_BASE_URL.  If port 3000 is occupied locally:
+   *   TEST_BASE_URL=http://localhost:3001 npx playwright test
    */
   webServer: {
-    command: `node scripts/test-server.js ${proxyPort}`,
+    command: `node scripts/test-server.js ${serverPort}`,
     url: BASE_URL,
-    // Never reuse an existing server — always start our proxy fresh.
-    // If port 3000 is occupied locally by something else, override with:
-    //   TEST_BASE_URL=http://localhost:3001 npx playwright test
     reuseExistingServer: false,
-    // 60s gives CI runners time to start Node and write the substituted HTML
     timeout: 60000,
   },
 

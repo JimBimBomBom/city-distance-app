@@ -3,12 +3,11 @@ name: Test and Deploy to GitHub Pages
 on:
   push:
     branches:
-      - main  # Deploy on push to the main branch
+      - main
   pull_request:
     branches:
-      - main  # Run tests on PRs to main
+      - main
 
-# Permissions needed for GitHub Pages deployment
 permissions:
   contents: write
   pages: write
@@ -17,175 +16,42 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Check out the repository
       uses: actions/checkout@v4
 
-    # Setup Bun for faster builds
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
       with:
         bun-version: latest
 
-    # Setup Node.js for Playwright (Bun has limited Playwright support)
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
 
-    # Install dependencies with Bun (much faster)
-    - name: Install dependencies with Bun
+    - name: Install dependencies
       run: bun install
 
-    # Build the package with Bun
     - name: Build the package
       run: bun run build
 
-    # Start CDS backend in Docker for testing
-    - name: Start CDS Backend
-      run: |
-        echo "🐳 Starting CDS backend containers..."
-        docker compose -f docker-compose.test.yml up -d       
-        # Wait for Elasticsearch to be healthy (it takes the longest)
-        echo "⏳ Waiting for Elasticsearch to be healthy..."
-        max_attempts=60
-        attempt=0
-        while [ $attempt -lt $max_attempts ]; do
-          container_status=$(docker compose -f docker-compose.test.yml ps elasticsearch --format "table {{.Status}}" | tail -n 1)
-          echo "Attempt $attempt/$max_attempts - Elasticsearch status: $container_status"
-          
-          if echo "$container_status" | grep -q "healthy"; then
-            echo "✅ Elasticsearch is healthy!"
-            break
-          fi
-          
-          # Show last 20 lines of logs every 10 attempts
-          if [ $((attempt % 10)) -eq 0 ]; then
-            echo "=== Recent Elasticsearch Logs ==="
-            docker compose -f docker-compose.test.yml logs --tail=20 elasticsearch 2>/dev/null || true
-          fi
-          
-          # Try to curl ES directly to see if it's responding
-          if [ $attempt -gt 20 ]; then
-            echo "Testing ES endpoint directly..."
-            curl -s http://localhost:9200/_cluster/health 2>/dev/null || echo "ES not responding yet"
-          fi
-          
-          attempt=$((attempt + 1))
-          sleep 5
-        done
-        
-        if [ $attempt -eq $max_attempts ]; then
-          echo "❌ Elasticsearch failed to become healthy"
-          echo "=== Full Elasticsearch Container Logs ==="
-          docker compose -f docker-compose.test.yml logs elasticsearch
-          echo "=== Container Status ==="
-          docker compose -f docker-compose.test.yml ps
-          echo "=== Docker Stats ==="
-          docker stats --no-stream --format "table {{.Container}},{{.CPUPerc}},{{.MemUsage}},{{.Status}}" 2>/dev/null || true
-          exit 1
-        fi
-        
-        # Wait for MySQL to be healthy
-        echo "⏳ Waiting for MySQL to be healthy..."
-        attempt=0
-        while [ $attempt -lt $max_attempts ]; do
-          container_status=$(docker compose -f docker-compose.test.yml ps db --format "table {{.Status}}" | tail -n 1)
-          if echo "$container_status" | grep -q "healthy"; then
-            echo "✅ MySQL is healthy!"
-            break
-          fi
-          attempt=$((attempt + 1))
-          echo "Attempt $attempt/$max_attempts - MySQL not ready yet..."
-          sleep 2
-        done
-        
-        if [ $attempt -eq $max_attempts ]; then
-          echo "❌ MySQL failed to become healthy"
-          docker compose -f docker-compose.test.yml logs db
-          exit 1
-        fi
-        
-        # Wait for backend
-        echo "⏳ Waiting for CDS Backend to be ready..."
-        attempt=0
-        while [ $attempt -lt $max_attempts ]; do
-          if curl -s http://localhost:8080/health_check > /dev/null 2>&1; then
-            echo "✅ Backend is ready!"
-            break
-          fi
-          attempt=$((attempt + 1))
-          echo "Attempt $attempt/$max_attempts - Backend not ready yet..."
-          
-          # Show debug info every 20 attempts
-          if [ $((attempt % 20)) -eq 0 ]; then
-            echo ""
-            echo "🔍 DEBUG INFO (attempt $attempt):"
-            echo "📋 Connection String:"
-            grep "DATABASE_CONNECTION_STRING" DefaultAppEnv.env || echo "Not found"
-            echo ""
-            echo "📋 Backend logs (last 20 lines):"
-            docker compose -f docker-compose.test.yml logs cds-backend --tail=20 2>/dev/null || true
-            echo ""
-          fi
-          
-          sleep 2
-        done
-        
-        if [ $attempt -eq $max_attempts ]; then
-          echo "❌ Backend failed to start"
-          echo ""
-          echo "🔍 DEBUGGING INFORMATION:"
-          echo "========================"
-          echo ""
-          echo "📋 Database Connection String from DefaultAppEnv.env:"
-          grep "DATABASE_CONNECTION_STRING" DefaultAppEnv.env || echo "Not found in DefaultAppEnv.env"
-          echo ""
-          echo "📋 All Environment Variables passed to backend:"
-          cat DefaultAppEnv.env
-          echo ""
-          echo "📋 MySQL Container Environment:"
-          docker compose -f docker-compose.test.yml exec db env | grep -i mysql || true
-          echo ""
-          echo "📋 Backend Container Logs:"
-          docker compose -f docker-compose.test.yml logs cds-backend --tail=100
-          echo ""
-          echo "📋 MySQL Container Logs:"
-          docker compose -f docker-compose.test.yml logs db --tail=50
-          echo ""
-          echo "📋 Testing MySQL connection from backend container:"
-          docker compose -f docker-compose.test.yml exec cds-backend sh -c "nc -zv db 3306" 2>&1 || echo "Cannot connect to MySQL port"
-          echo ""
-          exit 1
-        fi
-    
-    # Install Playwright with Node.js
     - name: Install Playwright Browsers
       run: npx playwright install chromium firefox
 
-    # Run E2E tests.
-    # Playwright's webServer config (playwright.config.ts) starts the proxy
-    # itself — no need to pre-start it here.  The proxy serves
-    # website/.test/index.html and forwards API paths to the real backend,
-    # keeping the browser on the same origin as the API (no CORS).
-    # globalSetup writes website/.test/index.html with __API_BASE__ set to
-    # the proxy URL (TEST_BASE_URL) so the CDSClient calls the proxy.
+    # Tests use Playwright page.route() mocks — no real backend required.
+    # The webServer (scripts/test-server.js) serves the static HTML; all
+    # API calls (/languages, /suggestions, /distance) are intercepted and
+    # fulfilled with fixture data directly inside the test suite.
     - name: Run Playwright tests
       run: npx playwright test
       env:
         CI: true
         TEST_BASE_URL: http://localhost:3000
-        CDS_API_BASE: http://localhost:8080
         CDS_AUTH_USERNAME: admin
         CDS_AUTH_PASSWORD: password
 
-    # Stop backend after tests
-    - name: Stop CDS Backend
-      if: always()
-      run: docker compose -f docker-compose.test.yml down
-
-    # Upload test results
     - name: Upload Playwright Report
       uses: actions/upload-artifact@v4
       if: always()
@@ -197,7 +63,7 @@ jobs:
         retention-days: 30
 
   build-and-deploy:
-    needs: test  # Only deploy if tests pass
+    needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 
@@ -205,19 +71,16 @@ jobs:
     - name: Check out the repository
       uses: actions/checkout@v4
 
-    # Setup Bun for deployment build
     - name: Setup Bun
       uses: oven-sh/setup-bun@v2
       with:
         bun-version: latest
 
-    # Install and build with Bun
     - name: Install dependencies and build
       run: |
         bun install
         bun run build
 
-    # Inject secrets into the website
     - name: Inject environment variables
       run: |
         echo "Injecting secrets into website..."
@@ -225,7 +88,6 @@ jobs:
         sed -i 's|__AUTH_USERNAME__|'${{ secrets.AUTH_USERNAME }}'|g' website/index.html
         sed -i 's|__AUTH_PASSWORD__|'${{ secrets.AUTH_PASSWORD }}'|g' website/index.html
 
-    # Deploy to GitHub Pages using PAT
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v4
       with:

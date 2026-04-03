@@ -1,166 +1,20 @@
-{
-  "cities": [
-    {
-      "id": "1",
-      "name": "New York",
-      "countryCode": "US",
-      "country": "United States",
-      "adminRegion": "New York",
-      "population": 8405837,
-      "flag": "US"
-    },
-    {
-      "id": "2",
-      "name": "London",
-      "countryCode": "GB",
-      "country": "United Kingdom",
-      "adminRegion": "England",
-      "population": 8982000,
-      "flag": "GB"
-    },
-    {
-      "id": "3",
-      "name": "Tokyo",
-      "countryCode": "JP",
-      "country": "Japan",
-      "adminRegion": "Tokyo",
-      "population": 13960000,
-      "flag": "JP"
-    },
-    {
-      "id": "4",
-      "name": "Paris",
-      "countryCode": "FR",
-      "country": "France",
-      "adminRegion": "Île-de-France",
-      "population": 2161000,
-      "flag": "FR"
-    },
-    {
-      "id": "5",
-      "name": "Berlin",
-      "countryCode": "DE",
-      "country": "Germany",
-      "adminRegion": "Berlin",
-      "population": 3645000,
-      "flag": "DE"
-    },
-    {
-      "id": "6",
-      "name": "Sydney",
-      "countryCode": "AU",
-      "country": "Australia",
-      "adminRegion": "New South Wales",
-      "population": 5312000,
-      "flag": "AU"
-    },
-    {
-      "id": "7",
-      "name": "Toronto",
-      "countryCode": "CA",
-      "country": "Canada",
-      "adminRegion": "Ontario",
-      "population": 2731000,
-      "flag": "CA"
-    },
-    {
-      "id": "8",
-      "name": "Singapore",
-      "countryCode": "SG",
-      "country": "Singapore",
-      "adminRegion": "Singapore",
-      "population": 5686000,
-      "flag": "SG"
-    },
-    {
-      "id": "9",
-      "name": "Madrid",
-      "countryCode": "ES",
-      "country": "Spain",
-      "adminRegion": "Community of Madrid",
-      "population": 3305408,
-      "flag": "ES"
-    },
-    {
-      "id": "10",
-      "name": "Rome",
-      "countryCode": "IT",
-      "country": "Italy",
-      "adminRegion": "Lazio",
-      "population": 2872800,
-      "flag": "IT"
-    },
-    {
-      "id": "11",
-      "name": "Amsterdam",
-      "countryCode": "NL",
-      "country": "Netherlands",
-      "adminRegion": "North Holland",
-      "population": 921402,
-      "flag": "NL"
-    },
-    {
-      "id": "12",
-      "name": "Vienna",
-      "countryCode": "AT",
-      "country": "Austria",
-      "adminRegion": "Vienna",
-      "population": 1897491,
-      "flag": "AT"
-    },
-    {
-      "id": "13",
-      "name": "Warsaw",
-      "countryCode": "PL",
-      "country": "Poland",
-      "adminRegion": "Masovian Voivodeship",
-      "population": 1794166,
-      "flag": "PL"
-    },
-    {
-      "id": "14",
-      "name": "Lisbon",
-      "countryCode": "PT",
-      "country": "Portugal",
-      "adminRegion": "Lisbon",
-      "population": 545245,
-      "flag": "PT"
-    },
-    {
-      "id": "15",
-      "name": "Prague",
-      "countryCode": "CZ",
-      "country": "Czech Republic",
-      "adminRegion": "Prague",
-      "population": 1335084,
-      "flag": "CZ"
-    },
-    {
-      "id": "16",
-      "name": "Seoul",
-      "countryCode": "KR",
-      "country": "South Korea",
-      "adminRegion": "Seoul",
-      "population": 9776000,
-      "flag": "KR"
-    },
-    {
-      "id": "17",
-      "name": "Mumbai",
-      "countryCode": "IN",
-      "country": "India",
-      "adminRegion": "Maharashtra",
-      "population": 20667656,
-      "flag": "IN"
-    },
-    {
-      "id": "18",
-      "name": "São Paulo",
-      "countryCode": "BR",
-      "country": "Brazil",
-      "adminRegion": "São Paulo",
-      "population": 12300000,
-      "flag": "BR"
-    }
-  ]
-}
+[
+  { "id": "1",  "name": "New York",   "countryCode": "US", "country": "United States",  "adminRegion": "New York",               "population": 8405837  },
+  { "id": "2",  "name": "London",     "countryCode": "GB", "country": "United Kingdom", "adminRegion": "England",                "population": 8982000  },
+  { "id": "3",  "name": "Tokyo",      "countryCode": "JP", "country": "Japan",          "adminRegion": "Tokyo",                  "population": 13960000 },
+  { "id": "4",  "name": "Paris",      "countryCode": "FR", "country": "France",         "adminRegion": "Île-de-France",          "population": 2161000  },
+  { "id": "5",  "name": "Berlin",     "countryCode": "DE", "country": "Germany",        "adminRegion": "Berlin",                 "population": 3645000  },
+  { "id": "6",  "name": "Sydney",     "countryCode": "AU", "country": "Australia",      "adminRegion": "New South Wales",        "population": 5312000  },
+  { "id": "7",  "name": "Toronto",    "countryCode": "CA", "country": "Canada",         "adminRegion": "Ontario",                "population": 2731000  },
+  { "id": "8",  "name": "Singapore",  "countryCode": "SG", "country": "Singapore",      "adminRegion": "Singapore",              "population": 5686000  },
+  { "id": "9",  "name": "Madrid",     "countryCode": "ES", "country": "Spain",          "adminRegion": "Community of Madrid",    "population": 3305408  },
+  { "id": "10", "name": "Rome",       "countryCode": "IT", "country": "Italy",          "adminRegion": "Lazio",                  "population": 2872800  },
+  { "id": "11", "name": "Amsterdam",  "countryCode": "NL", "country": "Netherlands",    "adminRegion": "North Holland",          "population": 921402   },
+  { "id": "12", "name": "Vienna",     "countryCode": "AT", "country": "Austria",        "adminRegion": "Vienna",                 "population": 1897491  },
+  { "id": "13", "name": "Warsaw",     "countryCode": "PL", "country": "Poland",         "adminRegion": "Masovian Voivodeship",   "population": 1794166  },
+  { "id": "14", "name": "Lisbon",     "countryCode": "PT", "country": "Portugal",       "adminRegion": "Lisbon",                 "population": 545245   },
+  { "id": "15", "name": "Prague",     "countryCode": "CZ", "country": "Czech Republic", "adminRegion": "Prague",                 "population": 1335084  },
+  { "id": "16", "name": "Seoul",      "countryCode": "KR", "country": "South Korea",    "adminRegion": "Seoul",                  "population": 9776000  },
+  { "id": "17", "name": "Mumbai",     "countryCode": "IN", "country": "India",          "adminRegion": "Maharashtra",            "population": 20667656 },
+  { "id": "18", "name": "São Paulo",  "countryCode": "BR", "country": "Brazil",         "adminRegion": "São Paulo",              "population": 12300000 }
+]

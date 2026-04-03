@@ -11,14 +11,9 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm,iife --global-name CDS --dts",
-    "test": "jest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:debug": "playwright test --debug",
-    "test:e2e:ci": "npm run backend:start && npm run test:e2e && npm run backend:stop",
-    "backend:start": "docker compose -f docker-compose.test.yml up -d && node scripts/wait-for-backend.js",
-    "backend:stop": "docker compose -f docker-compose.test.yml down",
-    "backend:logs": "docker compose -f docker-compose.test.yml logs -f",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

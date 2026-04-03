@@ -13,6 +13,7 @@ dist
 # Environment
 .env
 .env.local
+.env.*.local
 
 # IDE
 .vscode/
@@ -24,22 +25,4 @@ dist
 .DS_Store
 Thumbs.db
 
-# Docker Data Volumes - User's actual data, do not commit
-data/*
-!data/.gitkeep
-!data/elasticsearch/
-!data/mysql/
-data/elasticsearch/*
-!data/elasticsearch/.gitkeep
-data/mysql/*
-!data/mysql/.gitkeep
-
-Resources/*
-!Resources/.gitkeep
-
 *.log
-
-# Environment files (keep the template ones)
-.env
-.env.local
-.env.*.local

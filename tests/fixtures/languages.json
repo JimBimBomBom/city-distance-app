@@ -1,34 +1,8 @@
-{
-  "languages": [
-    {
-      "code": "en",
-      "name": "English",
-      "flag": "GB",
-      "countryCode": "GB"
-    },
-    {
-      "code": "de",
-      "name": "German",
-      "flag": "DE",
-      "countryCode": "DE"
-    },
-    {
-      "code": "fr",
-      "name": "French",
-      "flag": "FR",
-      "countryCode": "FR"
-    },
-    {
-      "code": "es",
-      "name": "Spanish",
-      "flag": "ES",
-      "countryCode": "ES"
-    },
-    {
-      "code": "it",
-      "name": "Italian",
-      "flag": "IT",
-      "countryCode": "IT"
-    }
-  ]
-}
+[
+  { "code": "en",    "name": "English",      "countryCode": "GB", "useImperial": false },
+  { "code": "en-US", "name": "English (US)", "countryCode": "US", "useImperial": true  },
+  { "code": "de",    "name": "German",       "countryCode": "DE", "useImperial": false },
+  { "code": "fr",    "name": "French",       "countryCode": "FR", "useImperial": false },
+  { "code": "es",    "name": "Spanish",      "countryCode": "ES", "useImperial": false },
+  { "code": "it",    "name": "Italian",      "countryCode": "IT", "useImperial": false }
+]
