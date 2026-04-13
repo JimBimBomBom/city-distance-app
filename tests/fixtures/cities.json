@@ -16,5 +16,6 @@
   { "id": "15", "name": "Prague",     "countryCode": "CZ", "country": "Czech Republic", "adminRegion": "Prague",                 "population": 1335084  },
   { "id": "16", "name": "Seoul",      "countryCode": "KR", "country": "South Korea",    "adminRegion": "Seoul",                  "population": 9776000  },
   { "id": "17", "name": "Mumbai",     "countryCode": "IN", "country": "India",          "adminRegion": "Maharashtra",            "population": 20667656 },
-  { "id": "18", "name": "São Paulo",  "countryCode": "BR", "country": "Brazil",         "adminRegion": "São Paulo",              "population": 12300000 }
+  { "id": "18", "name": "São Paulo",  "countryCode": "BR", "country": "Brazil",         "adminRegion": "São Paulo",              "population": 12300000 },
+  { "id": "19", "name": "New Orleans","countryCode": "US", "country": "United States",  "adminRegion": "Louisiana",              "population": 383997   }
 ]
